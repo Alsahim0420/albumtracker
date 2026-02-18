@@ -48,14 +48,70 @@ abstract final class AppConstants {
   static const String registerTermsSuffix = '.';
 
   // --- Home ---
+  static const String homeTitle = 'World Cup 2026';
   static const String homeSubtitle = 'World Cup 2026';
+  static const String homeAlbumCollection = 'ALBUM COLLECTION';
+  static const String homeTotalCollection = 'TOTAL COLLECTION';
   static const String homeCompleted = 'Completed';
   static const String homeSwapsAvailable = 'Swaps available';
   static const String homeFilterAll = 'All';
   static const String homeFilterMissing = 'Missing';
   static const String homeFilterSwaps = 'Swaps';
+  static const String homeTabGroups = 'Groups';
+  static const String homeTabTeams = 'Teams';
+  static const String homeTabSpecials = 'Specials';
+  static const String homeTabMarketplace = 'Marketplace';
+  static const String homeComplete = 'COMPLETE';
+  static const String homeShowMoreGroups = 'Show %s More Groups';
   static const String homeNavAlbum = 'Album';
   static const String homeNavTrade = 'Trade';
   static const String homeNavStats = 'Stats';
   static const String homeNavSettings = 'Settings';
+
+  // --- Team detail ---
+  static const String teamDetailBackGroups = 'Groups';
+  static const String teamDetailGroupEvent = '%s • 2026 World Cup';
+  static const String teamDetailCompletionStatus = 'COMPLETION STATUS';
+  static const String teamDetailTotal = 'TOTAL';
+  static const String teamDetailFound = 'FOUND';
+  static const String teamDetailMissing = 'MISSING';
+  static const String teamDetailAllStickers = 'All Stickers';
+  static const String teamDetailMissingTab = 'Missing';
+  static const String teamDetailDuplicates = 'Duplicates';
+  static const String teamDetailSquadMembers = 'SQUAD MEMBERS';
+  static const String teamDetailTeamBadge = 'Team Badge';
+  static const String teamDetailTeamPhoto = 'Team Photo';
+  static const String teamDetailNotFound = 'Not Found';
+  static const String stickerCountDone = 'Listo';
+
+  // --- Bulk Add Stickers ---
+  static const String bulkAddTitle = 'Bulk Add Stickers';
+  static const String bulkAddSubtitle = 'Quickly import multiple numbers';
+  static const String bulkAddInfoText =
+      'Type sticker numbers separated by commas or spaces. Duplicates will be ignored automatically.';
+  static const String bulkAddPlaceholder = 'e.g. 12, 45, 102, 290...';
+  static const String bulkAddStickersFound = 'stickers found';
+  static const String bulkAddExampleFormat = 'EXAMPLE FORMAT';
+  static const String bulkAddExample1 = '10, 24, 32';
+  static const String bulkAddExample2 = '10 24 32';
+  static const String bulkAddShortcuts = 'Shortcuts';
+  static const String bulkAddCancel = 'Cancel';
+  static const String bulkAddConfirm = 'Confirm & Add';
+
+  // --- Settings ---
+  static const String settingsTitle = 'Settings';
+  static const String settingsCollectorLevel = 'Collector Level: Gold';
+  static const String settingsStickersCollected = 'Stickers Collected';
+  static const String settingsAccount = 'ACCOUNT';
+  static const String settingsAccountSettings = 'Account Settings';
+  static const String settingsNotifications = 'Notifications';
+  static const String settingsNotificationsOn = 'On';
+  static const String settingsPrivacySecurity = 'Privacy & Security';
+  static const String settingsCollectionData = 'COLLECTION DATA';
+  static const String settingsExportData = 'Export Data';
+  static const String settingsSyncStatus = 'Sync Status';
+  static const String settingsSyncUpToDate = 'Up to date';
+  static const String settingsSupport = 'SUPPORT';
+  static const String settingsAppInformation = 'App Information';
+  static const String settingsHelpFaq = 'Help & FAQ';
 }

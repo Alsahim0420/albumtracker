@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../models/album_section_item.dart';
-import '../widgets/filter_segments.dart';
-import '../widgets/flag_placeholder.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
+import '../models/group_team_item.dart';
+import '../widgets/bulk_add_stickers_sheet.dart';
+import '../widgets/group_section.dart';
 import '../widgets/home_bottom_nav.dart';
-import '../widgets/home_header.dart';
-import '../widgets/progress_card.dart';
-import '../widgets/section_header.dart';
-import '../widgets/sticker_item.dart';
+import '../widgets/home_header_v2.dart';
+import '../widgets/home_tabs.dart';
+import 'team_detail_page.dart';
+import '../widgets/total_collection_card.dart';
 
-/// Pantalla principal: progreso, filtros, secciones del álbum y navegación inferior.
+/// Pantalla principal: World Cup 2026, tabs, total collection y grupos con equipos.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -19,149 +21,170 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  HomeFilter _filter = HomeFilter.all;
+  HomeTab _tab = HomeTab.groups;
   HomeNavItem _navIndex = HomeNavItem.album;
 
-  static const int _collected = 637;
-  static const int _total = 980;
-  static const int _swapsAvailable = 34;
+  static const int _totalCollected = 342;
+  static const int _totalStickers = 870;
+  static const int _moreGroupsCount = 14;
 
-  late final List<AlbumSection> _sections = _buildMockSections();
+  late final List<GroupWithTeams> _groups = _buildMockGroups();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.splashBackground,
       body: SafeArea(
-        child: Column(
-          children: [
-            HomeHeader(onProfileTap: () {}),
-            ProgressCard(
-              percent: 65,
-              collected: _collected,
-              total: _total,
-              swapsAvailable: _swapsAvailable,
-            ),
-            FilterSegments(
-              selected: _filter,
-              onChanged: (v) => setState(() => _filter = v),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.only(bottom: 80),
-                itemCount: _sections.length,
-                itemBuilder: (context, index) {
-                  final section = _sections[index];
-                  final items = _filteredItems(section.items);
-                  if (items.isEmpty) return const SizedBox.shrink();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SectionHeader(
-                        title: section.title,
-                        leading: section.flagCode != null
-                            ? FlagPlaceholder(code: section.flagCode!)
-                            : null,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            const crossCount = 5;
-                            final size = (constraints.maxWidth - (crossCount - 1) * 8) / crossCount;
-                            return Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: items
-                                  .map(
-                                    (item) => SizedBox(
-                                      width: size,
-                                      height: size,
-                                      child: StickerItem(
-                                        number: item.number,
-                                        state: item.state,
-                                        swapCount: item.swapCount,
-                                        onTap: () {},
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        child: _navIndex == HomeNavItem.settings
+            ? const SettingsPage()
+            : _buildAlbumBody(),
       ),
       bottomNavigationBar: HomeBottomNav(
         currentIndex: _navIndex,
         onTap: (v) => setState(() => _navIndex = v),
-        onFabTap: () {},
+        onFabTap: _openBulkAddSheet,
+        showFab: _navIndex == HomeNavItem.album,
       ),
     );
   }
 
-  List<AlbumStickerItem> _filteredItems(List<AlbumStickerItem> items) {
-    switch (_filter) {
-      case HomeFilter.all:
-        return items;
-      case HomeFilter.missing:
-        return items.where((i) => i.state == StickerState.missing).toList();
-      case HomeFilter.swaps:
-        return items.where((i) => i.swapCount > 0).toList();
+  Widget _buildAlbumBody() {
+    return Column(
+      children: [
+        HomeHeaderV2(onSearch: () {}),
+        TotalCollectionCard(
+          collected: _totalCollected,
+          total: _totalStickers,
+        ),
+        HomeTabs(
+          selected: _tab,
+          onChanged: (v) => setState(() => _tab = v),
+        ),
+        Expanded(
+          child: _tab == HomeTab.groups
+              ? ListView(
+                  padding: const EdgeInsets.only(bottom: 88),
+                  children: [
+                    ..._groups.map(
+                      (g) => GroupSection(
+                        group: g,
+                        onTeamTap: (team) => _openTeamDetail(team, g.name),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _ShowMoreGroupsButton(
+                      count: _moreGroupsCount,
+                      onTap: () {},
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                )
+              : _buildPlaceholderTab(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlaceholderTab() {
+    return Center(
+      child: Text(
+        _tabLabel(_tab),
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
+    );
+  }
+
+  String _tabLabel(HomeTab tab) {
+    switch (tab) {
+      case HomeTab.groups:
+        return AppConstants.homeTabGroups;
+      case HomeTab.teams:
+        return AppConstants.homeTabTeams;
+      case HomeTab.specials:
+        return AppConstants.homeTabSpecials;
+      case HomeTab.marketplace:
+        return AppConstants.homeTabMarketplace;
     }
   }
 
-  static List<AlbumSection> _buildMockSections() {
+  void _openTeamDetail(TeamProgress team, String groupName) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TeamDetailPage(team: team, groupName: groupName),
+      ),
+    );
+  }
+
+  void _openBulkAddSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: BulkAddStickersSheet(
+          onConfirm: (numbers) {
+            // TODO: integrar con lógica de álbum
+          },
+        ),
+      ),
+    );
+  }
+
+  static List<GroupWithTeams> _buildMockGroups() {
     return [
-      AlbumSection(
-        title: 'FWC • INTRO',
-        flagCode: null,
-        items: const [
-          AlbumStickerItem(number: 1, state: StickerState.collected),
-          AlbumStickerItem(number: 2, state: StickerState.missing),
-          AlbumStickerItem(number: 3, state: StickerState.hasSwaps, swapCount: 1),
-          AlbumStickerItem(number: 4, state: StickerState.collected),
-          AlbumStickerItem(number: 5, state: StickerState.collected),
+      GroupWithTeams(
+        name: 'Group A',
+        teams: const [
+          TeamProgress(name: 'USA', flagCode: 'USA', collected: 14, total: 20),
+          TeamProgress(name: 'Mexico', flagCode: 'MEX', collected: 20, total: 20),
+          TeamProgress(name: 'Canada', flagCode: 'CAN', collected: 12, total: 20),
+          TeamProgress(name: 'Costa Rica', flagCode: 'CRI', collected: 8, total: 20),
         ],
       ),
-      AlbumSection(
-        title: 'FRA • FRANCE',
-        flagCode: 'FRA',
-        items: const [
-          AlbumStickerItem(number: 6, state: StickerState.hasSwaps, swapCount: 3),
-          AlbumStickerItem(number: 7, state: StickerState.collected),
-          AlbumStickerItem(number: 8, state: StickerState.missing),
-          AlbumStickerItem(number: 9, state: StickerState.collected),
-          AlbumStickerItem(number: 10, state: StickerState.missing),
-          AlbumStickerItem(number: 11, state: StickerState.missing),
-          AlbumStickerItem(number: 12, state: StickerState.collected),
-          AlbumStickerItem(number: 13, state: StickerState.collected),
-          AlbumStickerItem(number: 14, state: StickerState.hasSwaps, swapCount: 1),
-          AlbumStickerItem(number: 15, state: StickerState.missing),
-          AlbumStickerItem(number: 16, state: StickerState.collected),
-          AlbumStickerItem(number: 17, state: StickerState.collected),
-          AlbumStickerItem(number: 18, state: StickerState.collected),
-          AlbumStickerItem(number: 19, state: StickerState.missing),
-          AlbumStickerItem(number: 20, state: StickerState.collected),
+      GroupWithTeams(
+        name: 'Group B',
+        teams: const [
+          TeamProgress(name: 'Argentina', flagCode: 'ARG', collected: 12, total: 20),
+          TeamProgress(name: 'Brazil', flagCode: 'BRA', collected: 9, total: 20),
         ],
       ),
-      AlbumSection(
-        title: 'COL • COLOMBIA',
-        flagCode: 'COL',
-        items: List.generate(
-          20,
-          (i) => AlbumStickerItem(
-            number: 21 + i,
-            state: i < 4 ? StickerState.missing : StickerState.collected,
+    ];
+  }
+}
+
+class _ShowMoreGroupsButton extends StatelessWidget {
+  const _ShowMoreGroupsButton({
+    required this.count,
+    required this.onTap,
+  });
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: onTap,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.textSecondary,
+            side: const BorderSide(color: AppColors.inputBorder),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            AppConstants.homeShowMoreGroups.replaceFirst('%s', '$count'),
           ),
         ),
       ),
-    ];
+    );
   }
 }
