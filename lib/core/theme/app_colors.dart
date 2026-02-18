@@ -60,4 +60,10 @@ abstract final class AppColors {
 
   /// Ítem de nav no seleccionado.
   static const Color navUnselected = Color(0xFF8899AA);
+
+  // --- Settings ---
+  /// Fondo del avatar / nivel collector (naranja).
+  static const Color profileAvatarBg = Color(0xFFE07C4A);
+  /// Indicador de estado (verde).
+  static const Color profileStatusDot = Color(0xFF22C55E);
 }

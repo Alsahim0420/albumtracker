@@ -13,11 +13,14 @@ class HomeBottomNav extends StatelessWidget {
     required this.currentIndex,
     this.onTap,
     this.onFabTap,
+    this.showFab = true,
   });
 
   final HomeNavItem currentIndex;
   final ValueChanged<HomeNavItem>? onTap;
   final VoidCallback? onFabTap;
+  /// Si false, no se muestra el FAB (ej. en Settings).
+  final bool showFab;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +58,7 @@ class HomeBottomNav extends StatelessWidget {
                     isSelected: currentIndex == HomeNavItem.trade,
                     onTap: () => onTap?.call(HomeNavItem.trade),
                   ),
-                  const SizedBox(width: 56),
+                  if (showFab) const SizedBox(width: 56),
                   _NavTile(
                     icon: Icons.bar_chart_rounded,
                     label: AppConstants.homeNavStats,
@@ -70,32 +73,33 @@ class HomeBottomNav extends StatelessWidget {
                   ),
                 ],
               ),
-              Positioned(
-                top: -20,
-                child: GestureDetector(
-                  onTap: onFabTap,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      color: AppColors.textPrimary,
-                      size: 28,
+              if (showFab)
+                Positioned(
+                  top: -20,
+                  child: GestureDetector(
+                    onTap: onFabTap,
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.add,
+                        color: AppColors.textPrimary,
+                        size: 28,
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
