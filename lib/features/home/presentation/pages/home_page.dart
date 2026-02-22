@@ -1,6 +1,11 @@
+// ignore_for_file: unnecessary_underscores
+
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/repository/album_repository.dart';
+import '../../../../core/storage/hive_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
 import '../models/group_team_item.dart';
@@ -24,12 +29,6 @@ class _HomePageState extends State<HomePage> {
   HomeTab _tab = HomeTab.groups;
   HomeNavItem _navIndex = HomeNavItem.album;
 
-  static const int _totalCollected = 342;
-  static const int _totalStickers = 870;
-  static const int _moreGroupsCount = 14;
-
-  late final List<GroupWithTeams> _groups = _buildMockGroups();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,39 +48,41 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildAlbumBody() {
-    return Column(
-      children: [
-        HomeHeaderV2(onSearch: () {}),
-        TotalCollectionCard(
-          collected: _totalCollected,
-          total: _totalStickers,
-        ),
-        HomeTabs(
-          selected: _tab,
-          onChanged: (v) => setState(() => _tab = v),
-        ),
-        Expanded(
-          child: _tab == HomeTab.groups
-              ? ListView(
-                  padding: const EdgeInsets.only(bottom: 88),
-                  children: [
-                    ..._groups.map(
-                      (g) => GroupSection(
-                        group: g,
-                        onTeamTap: (team) => _openTeamDetail(team, g.name),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _ShowMoreGroupsButton(
-                      count: _moreGroupsCount,
-                      onTap: () {},
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                )
-              : _buildPlaceholderTab(),
-        ),
-      ],
+    return ValueListenableBuilder(
+      valueListenable: collectionBox.listenable(),
+      builder: (context, __, ___) {
+        final stats = AlbumRepository.getGlobalStats();
+        final groups = AlbumRepository.getGroupsWithProgress();
+        return Column(
+          children: [
+            HomeHeaderV2(onSearch: () {}),
+            TotalCollectionCard(
+              collected: stats.collectedStickers,
+              total: stats.totalStickers,
+            ),
+            HomeTabs(
+              selected: _tab,
+              onChanged: (v) => setState(() => _tab = v),
+            ),
+            Expanded(
+              child: _tab == HomeTab.groups
+                  ? ListView(
+                      padding: const EdgeInsets.only(bottom: 88),
+                      children: [
+                        ...groups.map(
+                          (g) => GroupSection(
+                            group: g,
+                            onTeamTap: (team) => _openTeamDetail(team, g.name),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    )
+                  : _buildPlaceholderTab(),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -108,9 +109,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openTeamDetail(TeamProgress team, String groupName) {
+    final teamId = AlbumRepository.getTeamIdByGroupAndTeamName(groupName, team.name);
+    if (teamId == null) return;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => TeamDetailPage(team: team, groupName: groupName),
+        builder: (_) => TeamDetailPage(teamId: teamId, groupName: groupName),
       ),
     );
   }
@@ -125,64 +128,10 @@ class _HomePageState extends State<HomePage> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: BulkAddStickersSheet(
-          onConfirm: (numbers) {
-            // TODO: integrar con lógica de álbum
+          onConfirm: (globalNumbers) async {
+            await addStickersByGlobalNumbers(globalNumbers);
+            if (context.mounted) setState(() {});
           },
-        ),
-      ),
-    );
-  }
-
-  static List<GroupWithTeams> _buildMockGroups() {
-    return [
-      GroupWithTeams(
-        name: 'Group A',
-        teams: const [
-          TeamProgress(name: 'USA', flagCode: 'USA', collected: 14, total: 20),
-          TeamProgress(name: 'Mexico', flagCode: 'MEX', collected: 20, total: 20),
-          TeamProgress(name: 'Canada', flagCode: 'CAN', collected: 12, total: 20),
-          TeamProgress(name: 'Costa Rica', flagCode: 'CRI', collected: 8, total: 20),
-        ],
-      ),
-      GroupWithTeams(
-        name: 'Group B',
-        teams: const [
-          TeamProgress(name: 'Argentina', flagCode: 'ARG', collected: 12, total: 20),
-          TeamProgress(name: 'Brazil', flagCode: 'BRA', collected: 9, total: 20),
-        ],
-      ),
-    ];
-  }
-}
-
-class _ShowMoreGroupsButton extends StatelessWidget {
-  const _ShowMoreGroupsButton({
-    required this.count,
-    required this.onTap,
-  });
-
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton(
-          onPressed: onTap,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textSecondary,
-            side: const BorderSide(color: AppColors.inputBorder),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Text(
-            AppConstants.homeShowMoreGroups.replaceFirst('%s', '$count'),
-          ),
         ),
       ),
     );

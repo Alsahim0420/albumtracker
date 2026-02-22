@@ -1,13 +1,36 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: unnecessary_underscores
 
-/// Placeholder de bandera por código (colores representativos).
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+/// Muestra bandera por asset path (assets/flags/xx.svg) o por código (colores).
 class FlagPlaceholder extends StatelessWidget {
   const FlagPlaceholder({super.key, required this.code});
 
+  /// Código 3 letras (USA, MEX) para colores, o ruta de asset (assets/flags/us.svg).
   final String code;
 
   @override
   Widget build(BuildContext context) {
+    if (code.startsWith('assets/')) {
+      if (code.endsWith('.svg')) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SvgPicture.asset(code),
+          ),
+        );
+      }
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(2),
+        child: Image.asset(
+          code,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _colorFallback(code),
+        ),
+      );
+    }
     final colors = _colorsForCode(code);
     if (colors.isEmpty) return const SizedBox.shrink();
     return ClipRRect(
@@ -21,8 +44,21 @@ class FlagPlaceholder extends StatelessWidget {
     );
   }
 
+  Widget _colorFallback(String path) {
+    final colors = _colorsForCode(path);
+    if (colors.isEmpty) return Container(color: Colors.grey.shade700, width: 32, height: 24);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: colors.map((c) => Container(width: 6, height: 16, color: c)).toList(),
+      ),
+    );
+  }
+
   static List<Color> _colorsForCode(String code) {
-    switch (code.toUpperCase()) {
+    final upper = code.length > 4 ? code : code.toUpperCase();
+    switch (upper) {
       case 'FRA':
         return [const Color(0xFF002395), const Color(0xFFFFFFFF), const Color(0xFFED2939)];
       case 'COL':

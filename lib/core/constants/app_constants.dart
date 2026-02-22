@@ -11,6 +11,17 @@ abstract final class AppConstants {
   /// Duración del splash antes de navegar (ms).
   static const int splashDurationMs = 2500;
 
+  // --- Personalization (Onboarding) ---
+  static const String personalizationTitle = 'Personalize your experience';
+  static const String personalizationSubtitle =
+      'Set up your profile to get started. You can change this later in Settings.';
+  static const String personalizationNameLabel = 'Your name';
+  static const String personalizationNameHint = 'e.g. Alex';
+  static const String personalizationFavoriteTeamLabel = 'Favorite team (optional)';
+  static const String personalizationFavoriteTeamHint = 'Select a team';
+  static const String personalizationColorLabel = 'Profile color (optional)';
+  static const String personalizationContinue = 'Continue';
+
   // --- Login ---
   static const String loginWelcomeTitle = 'Welcome back';
   static const String loginSubtitle = 'Sign in to sync your 2026 collection across devices.';
