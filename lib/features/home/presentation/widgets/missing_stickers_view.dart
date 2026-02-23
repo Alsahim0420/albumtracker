@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Vista de pegatinas faltantes. Se muestra al pulsar "Faltantes" en el bottom nav.
 class MissingStickersView extends StatelessWidget {
