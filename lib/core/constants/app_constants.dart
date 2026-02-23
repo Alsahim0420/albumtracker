@@ -65,7 +65,8 @@ abstract final class AppConstants {
   static const String homeShowMoreGroups = 'Show %s More Groups';
   static const String homeNavAlbum = 'Album';
   static const String homeNavTrade = 'Trade';
-  static const String homeNavStats = 'Stats';
+  static const String homeNavRepeated = 'Repeated';
+  static const String homeNavMissing = 'Missing';
   static const String homeNavSettings = 'Settings';
 
   // --- Team detail ---

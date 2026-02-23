@@ -4,7 +4,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Índice de la pestaña inferior.
-enum HomeNavItem { album, trade, stats, settings }
+enum HomeNavItem { album, repeated, missing, settings }
 
 /// Barra inferior con pestañas y FAB.
 class HomeBottomNav extends StatelessWidget {
@@ -53,17 +53,17 @@ class HomeBottomNav extends StatelessWidget {
                     onTap: () => onTap?.call(HomeNavItem.album),
                   ),
                   _NavTile(
-                    icon: Icons.swap_horiz,
-                    label: AppConstants.homeNavTrade,
-                    isSelected: currentIndex == HomeNavItem.trade,
-                    onTap: () => onTap?.call(HomeNavItem.trade),
+                    icon: Icons.copy_rounded,
+                    label: AppConstants.homeNavRepeated,
+                    isSelected: currentIndex == HomeNavItem.repeated,
+                    onTap: () => onTap?.call(HomeNavItem.repeated),
                   ),
                   if (showFab) const SizedBox(width: 56),
                   _NavTile(
-                    icon: Icons.bar_chart_rounded,
-                    label: AppConstants.homeNavStats,
-                    isSelected: currentIndex == HomeNavItem.stats,
-                    onTap: () => onTap?.call(HomeNavItem.stats),
+                    icon: Icons.playlist_add_rounded,
+                    label: AppConstants.homeNavMissing,
+                    isSelected: currentIndex == HomeNavItem.missing,
+                    onTap: () => onTap?.call(HomeNavItem.missing),
                   ),
                   _NavTile(
                     icon: Icons.settings_outlined,

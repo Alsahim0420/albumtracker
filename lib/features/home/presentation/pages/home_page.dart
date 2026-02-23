@@ -9,6 +9,8 @@ import '../widgets/group_section.dart';
 import '../widgets/home_bottom_nav.dart';
 import '../widgets/home_header_v2.dart';
 import '../widgets/home_tabs.dart';
+import '../widgets/missing_stickers_view.dart';
+import '../widgets/repeated_stickers_view.dart';
 import 'team_detail_page.dart';
 import '../widgets/total_collection_card.dart';
 
@@ -35,9 +37,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: AppColors.splashBackground,
       body: SafeArea(
-        child: _navIndex == HomeNavItem.settings
-            ? const SettingsPage()
-            : _buildAlbumBody(),
+        child: _buildBody(),
       ),
       bottomNavigationBar: HomeBottomNav(
         currentIndex: _navIndex,
@@ -46,6 +46,19 @@ class _HomePageState extends State<HomePage> {
         showFab: _navIndex == HomeNavItem.album,
       ),
     );
+  }
+
+  Widget _buildBody() {
+    switch (_navIndex) {
+      case HomeNavItem.album:
+        return _buildAlbumBody();
+      case HomeNavItem.repeated:
+        return const RepeatedStickersView();
+      case HomeNavItem.missing:
+        return const MissingStickersView();
+      case HomeNavItem.settings:
+        return const SettingsPage();
+    }
   }
 
   Widget _buildAlbumBody() {
