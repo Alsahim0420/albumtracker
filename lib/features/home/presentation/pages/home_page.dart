@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../settings/presentation/pages/settings_page.dart';
-import '../models/group_team_item.dart';
-import '../widgets/bulk_add_stickers_sheet.dart';
-import '../widgets/group_section.dart';
-import '../widgets/home_bottom_nav.dart';
-import '../widgets/home_header_v2.dart';
-import '../widgets/home_tabs.dart';
-import '../widgets/missing_stickers_view.dart';
-import '../widgets/repeated_stickers_view.dart';
-import 'team_detail_page.dart';
-import '../widgets/total_collection_card.dart';
+import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
+import 'package:albumtracker/features/settings/presentation/pages/settings_page.dart';
+import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
+import 'package:albumtracker/features/home/presentation/widgets/bulk_add_stickers_sheet.dart';
+import 'package:albumtracker/features/home/presentation/widgets/group_section.dart';
+import 'package:albumtracker/features/home/presentation/widgets/home_bottom_nav.dart';
+import 'package:albumtracker/features/home/presentation/widgets/home_header_v2.dart';
+import 'package:albumtracker/features/home/presentation/widgets/home_tabs.dart';
+import 'package:albumtracker/features/home/presentation/widgets/missing_stickers_view.dart';
+import 'package:albumtracker/features/home/presentation/widgets/repeated_stickers_view.dart';
+import 'package:albumtracker/features/home/presentation/widgets/total_collection_card.dart';
+import 'package:albumtracker/features/home/presentation/pages/team_detail_page.dart';
 
 /// Pantalla principal: World Cup 2026, tabs, total collection y grupos con equipos.
 class HomePage extends StatefulWidget {

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../models/group_team_item.dart';
-import '../models/team_sticker_item.dart';
-import '../widgets/flag_placeholder.dart';
+import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
+import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
+import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
+import 'package:albumtracker/features/home/presentation/widgets/flag_placeholder.dart';
 import '../widgets/sticker_count_sheet.dart';
-import '../widgets/team_completion_card.dart';
-import '../widgets/team_sticker_card.dart';
-import '../widgets/team_sticker_filter_tabs.dart';
+import 'package:albumtracker/features/home/presentation/widgets/team_completion_card.dart';
+import 'package:albumtracker/features/home/presentation/widgets/team_sticker_card.dart';
+import 'package:albumtracker/features/home/presentation/widgets/team_sticker_filter_tabs.dart';
 
 /// Vista de detalle de un equipo: cabecera, estado, filtros y rejilla de pegatinas.
 class TeamDetailPage extends StatefulWidget {

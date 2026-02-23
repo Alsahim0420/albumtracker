@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Vista de pegatinas repetidas (duplicados). Se muestra al pulsar "Repetidas" en el bottom nav.
 class RepeatedStickersView extends StatelessWidget {
