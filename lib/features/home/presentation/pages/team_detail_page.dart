@@ -1,8 +1,14 @@
+// ignore_for_file: unnecessary_underscores
+
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/models/sticker_model.dart';
+import 'package:albumtracker/core/models/team_model.dart';
+import 'package:albumtracker/core/repository/album_repository.dart';
+import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/core/theme/app_colors.dart';
-import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 import 'package:albumtracker/features/home/presentation/widgets/flag_placeholder.dart';
 import '../widgets/sticker_count_sheet.dart';
@@ -11,44 +17,84 @@ import 'package:albumtracker/features/home/presentation/widgets/team_sticker_car
 import 'package:albumtracker/features/home/presentation/widgets/team_sticker_filter_tabs.dart';
 
 /// Vista de detalle de un equipo: cabecera, estado, filtros y rejilla de pegatinas.
-class TeamDetailPage extends StatefulWidget {
+class TeamDetailPage extends StatelessWidget {
   const TeamDetailPage({
     super.key,
+    required this.teamId,
+    required this.groupName,
+  });
+
+  final String teamId;
+  final String groupName;
+
+  @override
+  Widget build(BuildContext context) {
+    final team = AlbumRepository.getTeamById(teamId);
+    if (team == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Team')),
+        body: const Center(child: Text('Team not found')),
+      );
+    }
+    return _TeamDetailBody(team: team, groupName: groupName);
+  }
+}
+
+class _TeamDetailBody extends StatefulWidget {
+  const _TeamDetailBody({
     required this.team,
     required this.groupName,
   });
 
-  final TeamProgress team;
+  final TeamModel team;
   final String groupName;
 
   @override
-  State<TeamDetailPage> createState() => _TeamDetailPageState();
+  State<_TeamDetailBody> createState() => _TeamDetailBodyState();
 }
 
-class _TeamDetailPageState extends State<TeamDetailPage> {
+class _TeamDetailBodyState extends State<_TeamDetailBody> {
   TeamStickerFilter _filter = TeamStickerFilter.all;
-  late final List<TeamStickerItem> _stickers = _buildMockStickers();
-  late final Map<String, int> _stickerCounts = _initCounts();
 
-  Map<String, int> _initCounts() {
-    final map = <String, int>{};
-    for (final s in _stickers) {
-      map[s.code] = s.collected ? (1 + s.duplicateCount) : 0;
-    }
-    return map;
+  int _countFor(StickerModel s) => AlbumRepository.getStickerCount(s.id);
+
+  List<TeamStickerItem> _toStickerItems() {
+    final stickers = widget.team.stickers;
+    return stickers.map((s) {
+      final count = _countFor(s);
+      return TeamStickerItem(
+        code: s.code,
+        label: s.displayLabel,
+        name: s.playerName,
+        type: _stickerType(s.type),
+        collected: count > 0,
+        duplicateCount: count > 1 ? count - 1 : 0,
+      );
+    }).toList();
   }
 
-  int _countFor(TeamStickerItem s) => _stickerCounts[s.code] ?? 0;
+  TeamStickerType _stickerType(StickerType t) {
+    switch (t) {
+      case StickerType.badge:
+        return TeamStickerType.badge;
+      case StickerType.team_photo:
+        return TeamStickerType.photo;
+      case StickerType.player:
+        return TeamStickerType.player;
+    }
+    throw StateError('Unknown StickerType: $t');
+  }
 
-  void _openStickerSheet(TeamStickerItem sticker) {
+  void _openStickerSheet(StickerModel sticker) {
+    final count = _countFor(sticker);
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => StickerCountSheet(
-        sticker: sticker,
-        initialCount: _countFor(sticker),
-        onDone: (count) {
-          setState(() => _stickerCounts[sticker.code] = count);
+        sticker: _toStickerItems().firstWhere((i) => i.code == sticker.code),
+        initialCount: count,
+        onDone: (newCount) async {
+          await AlbumRepository.updateStickerCount(sticker.id, newCount);
         },
       ),
     );
@@ -56,150 +102,124 @@ class _TeamDetailPageState extends State<TeamDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final total = _stickers.length;
-    final found = _stickers.where((s) => _countFor(s) > 0).length;
+    final team = widget.team;
+    final stickers = team.stickers;
+    final total = stickers.length;
+    int found = 0;
+    int duplicateCount = 0;
+    for (final s in stickers) {
+      final c = _countFor(s);
+      if (c > 0) found++;
+      if (c > 1) duplicateCount += c - 1;
+    }
     final missing = total - found;
-    final duplicateCount = _stickers.where((s) => _countFor(s) > 1).length;
-    final filtered = _filteredStickers();
+    final filtered = _filteredStickers(stickers);
 
-    return Scaffold(
-      backgroundColor: AppColors.splashBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.splashBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          AppConstants.teamDetailBackGroups,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.share_outlined, color: AppColors.textPrimary, size: 22),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_vert, color: AppColors.textPrimary, size: 22),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _TeamHeader(
-              teamName: widget.team.name,
-              groupName: widget.groupName,
-              flagCode: widget.team.flagCode,
+    return ValueListenableBuilder<Box>(
+      valueListenable: collectionBox.listenable(),
+      builder: (context, __, ___) {
+        return Scaffold(
+          backgroundColor: AppColors.splashBackground,
+          appBar: AppBar(
+            backgroundColor: AppColors.splashBackground,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+              onPressed: () => Navigator.of(context).pop(),
             ),
-            const SizedBox(height: 16),
-            TeamCompletionCard(
-              total: total,
-              found: found,
-              missing: missing,
+            title: Text(
+              AppConstants.teamDetailBackGroups,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            TeamStickerFilterTabs(
-              selected: _filter,
-              duplicateCount: duplicateCount,
-              onChanged: (v) => setState(() => _filter = v),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                AppConstants.teamDetailSquadMembers,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.placeholder,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
+            centerTitle: false,
+            actions: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.share_outlined, color: AppColors.textPrimary, size: 22),
               ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const crossCount = 3;
-                  final spacing = 10.0;
-                  final size = (constraints.maxWidth - (crossCount - 1) * spacing) / crossCount;
-                  return Wrap(
-                    spacing: spacing,
-                    runSpacing: spacing,
-                    children: filtered
-                        .map(
-                          (s) => SizedBox(
-                            width: size,
-                            height: size * 1.15,
-                            child: TeamStickerCard(
-                              sticker: s,
-                              count: _countFor(s),
-                              onTap: () => _openStickerSheet(s),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  );
-                },
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.more_vert, color: AppColors.textPrimary, size: 22),
               ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TeamHeader(
+                  teamName: team.name,
+                  groupName: widget.groupName,
+                  flagAssetPath: team.flagAssetPath,
+                ),
+                const SizedBox(height: 16),
+                TeamCompletionCard(
+                  total: total,
+                  found: found,
+                  missing: missing,
+                ),
+                TeamStickerFilterTabs(
+                  selected: _filter,
+                  duplicateCount: duplicateCount,
+                  onChanged: (v) => setState(() => _filter = v),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    AppConstants.teamDetailSquadMembers,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.placeholder,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const crossCount = 3;
+                      final spacing = 10.0;
+                      final size = (constraints.maxWidth - (crossCount - 1) * spacing) / crossCount;
+                      return Wrap(
+                        spacing: spacing,
+                        runSpacing: spacing,
+                        children: filtered
+                            .map(
+                              (s) => SizedBox(
+                                width: size,
+                                height: size * 1.15,
+                                child: TeamStickerCard(
+                                  sticker: _toStickerItems().firstWhere((i) => i.code == s.code),
+                                  count: _countFor(s),
+                                  onTap: () => _openStickerSheet(s),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  List<TeamStickerItem> _filteredStickers() {
+  List<StickerModel> _filteredStickers(List<StickerModel> stickers) {
     switch (_filter) {
       case TeamStickerFilter.all:
-        return _stickers;
+        return stickers;
       case TeamStickerFilter.missing:
-        return _stickers.where((s) => _countFor(s) == 0).toList();
+        return stickers.where((s) => _countFor(s) == 0).toList();
       case TeamStickerFilter.duplicates:
-        return _stickers.where((s) => _countFor(s) > 1).toList();
+        return stickers.where((s) => _countFor(s) > 1).toList();
     }
-  }
-
-  List<TeamStickerItem> _buildMockStickers() {
-    final prefix = widget.team.flagCode ?? 'T';
-    return [
-      TeamStickerItem(
-        code: '$prefix 00',
-        label: AppConstants.teamDetailTeamBadge,
-        type: TeamStickerType.badge,
-        collected: true,
-      ),
-      TeamStickerItem(
-        code: '$prefix 01',
-        label: AppConstants.teamDetailTeamPhoto,
-        type: TeamStickerType.photo,
-        collected: false,
-      ),
-      TeamStickerItem(code: '$prefix 1', label: 'G. OCHOA', type: TeamStickerType.player, collected: true, duplicateCount: 1),
-      TeamStickerItem(code: '$prefix 2', label: 'J. SÁNCHEZ', type: TeamStickerType.player, collected: true, duplicateCount: 1),
-      TeamStickerItem(code: '$prefix 3', label: 'MONTES', type: TeamStickerType.player, collected: false),
-      TeamStickerItem(code: '$prefix 4', label: 'E. ÁLVAREZ', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 5', label: 'J. VÁSQUEZ', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 6', label: 'ARTEAGA', type: TeamStickerType.player, collected: false),
-      TeamStickerItem(code: '$prefix 7', label: 'L. ROMO', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 8', label: 'C. RODRIGUEZ', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 9', label: 'R. JIMÉNEZ', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 10', label: '10', type: TeamStickerType.player, collected: false),
-      TeamStickerItem(code: '$prefix 11', label: 'S. GIMÉNEZ', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 12', label: '12', type: TeamStickerType.player, collected: false),
-      TeamStickerItem(code: '$prefix 13', label: '13', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 14', label: '14', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 15', label: '15', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 16', label: '16', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 17', label: '17', type: TeamStickerType.player, collected: true),
-      TeamStickerItem(code: '$prefix 18', label: '18', type: TeamStickerType.player, collected: false),
-      TeamStickerItem(code: '$prefix 19', label: '19', type: TeamStickerType.player, collected: false),
-      TeamStickerItem(code: '$prefix 20', label: '20', type: TeamStickerType.player, collected: false),
-    ];
   }
 }
 
@@ -207,12 +227,12 @@ class _TeamHeader extends StatelessWidget {
   const _TeamHeader({
     required this.teamName,
     required this.groupName,
-    this.flagCode,
+    required this.flagAssetPath,
   });
 
   final String teamName;
   final String groupName;
-  final String? flagCode;
+  final String flagAssetPath;
 
   @override
   Widget build(BuildContext context) {
@@ -223,10 +243,10 @@ class _TeamHeader extends StatelessWidget {
           SizedBox(
             width: 48,
             height: 36,
-            child: flagCode != null
+            child: flagAssetPath.isNotEmpty
                 ? FittedBox(
                     fit: BoxFit.contain,
-                    child: FlagPlaceholder(code: flagCode!),
+                    child: FlagPlaceholder(code: flagAssetPath),
                   )
                 : Container(
                     decoration: BoxDecoration(

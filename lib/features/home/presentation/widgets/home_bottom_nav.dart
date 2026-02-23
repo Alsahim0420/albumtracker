@@ -58,7 +58,6 @@ class HomeBottomNav extends StatelessWidget {
                     isSelected: currentIndex == HomeNavItem.repeated,
                     onTap: () => onTap?.call(HomeNavItem.repeated),
                   ),
-                  if (showFab) const SizedBox(width: 56),
                   _NavTile(
                     icon: Icons.playlist_add_rounded,
                     label: AppConstants.homeNavMissing,
@@ -73,33 +72,6 @@ class HomeBottomNav extends StatelessWidget {
                   ),
                 ],
               ),
-              if (showFab)
-                Positioned(
-                  top: -20,
-                  child: GestureDetector(
-                    onTap: onFabTap,
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        color: AppColors.textPrimary,
-                        size: 28,
-                      ),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
