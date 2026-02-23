@@ -7,7 +7,8 @@ import '../../../../core/theme/app_colors.dart';
 class SettingsProfileCard extends StatelessWidget {
   const SettingsProfileCard({
     super.key,
-    this.userName = 'Alex Morgan',
+    this.userName = 'Collector',
+    this.avatarColor,
     this.collectorLevel = AppConstants.settingsCollectorLevel,
     this.collected = 420,
     this.total = 650,
@@ -15,6 +16,8 @@ class SettingsProfileCard extends StatelessWidget {
   });
 
   final String userName;
+  /// Color del avatar; si es null se usa [AppColors.profileAvatarBg].
+  final Color? avatarColor;
   final String collectorLevel;
   final int collected;
   final int total;
@@ -40,7 +43,7 @@ class SettingsProfileCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: AppColors.profileAvatarBg,
+                  color: avatarColor ?? AppColors.profileAvatarBg,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
