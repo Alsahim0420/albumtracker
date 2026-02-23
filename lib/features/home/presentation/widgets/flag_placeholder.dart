@@ -9,16 +9,19 @@ class FlagPlaceholder extends StatelessWidget {
 
   /// Código 3 letras (USA, MEX) para colores, o ruta de asset (assets/flags/us.svg).
   final String code;
+  static const double flagWidth = 32;
+  static const double flagHeight = 20;
 
   @override
   Widget build(BuildContext context) {
     if (code.startsWith('assets/')) {
       if (code.endsWith('.svg')) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: SvgPicture.asset(code),
+        return SizedBox(
+          width: flagWidth,
+          height: flagHeight,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: _buildFlag(),
           ),
         );
       }
@@ -55,6 +58,31 @@ class FlagPlaceholder extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildFlag() {
+  if (code.startsWith('assets/')) {
+    if (code.endsWith('.svg')) {
+      return SvgPicture.asset(
+        code,
+        fit: BoxFit.cover,
+      );
+    }
+    return Image.asset(
+      code,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _colorFallback(code),
+    );
+  }
+
+  final colors = _colorsForCode(code);
+  return Row(
+    children: colors
+        .map((c) => Expanded(
+              child: Container(color: c),
+            ))
+        .toList(),
+  );
+}
 
   static List<Color> _colorsForCode(String code) {
     final upper = code.length > 4 ? code : code.toUpperCase();
