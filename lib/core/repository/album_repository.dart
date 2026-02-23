@@ -1,7 +1,7 @@
 import '../data/world_cup_2026_seed.dart';
 import '../models/group_model.dart';
 import '../models/team_model.dart';
-import '../storage/hive_storage.dart';
+import '../storage/hive_storage.dart' as hive;
 import '../../features/home/presentation/models/group_team_item.dart';
 
 /// Estadísticas globales del álbum.
@@ -59,7 +59,7 @@ class GroupProgressView {
 class AlbumRepository {
   AlbumRepository._();
 
-  static Map<String, int> get _collection => collectedStickersMap;
+  static Map<String, int> get _collection => hive.collectedStickersMap;
 
   static GlobalAlbumStats getGlobalStats() {
     final total = WorldCup2026Seed.totalTeamStickers;
@@ -142,7 +142,12 @@ class AlbumRepository {
   static int getStickerCount(String stickerId) => _collection[stickerId] ?? 0;
 
   static Future<void> updateStickerCount(String stickerId, int count) async {
-    await setStickerCount(stickerId, count);
+    await hive.setStickerCount(stickerId, count);
+  }
+
+  /// Añade pegatinas por números globales (bulk add).
+  static Future<void> addStickersByGlobalNumbers(Iterable<int> globalNumbers) async {
+    await hive.addStickersByGlobalNumbers(globalNumbers);
   }
 
   /// Obtiene el teamId para abrir TeamDetailPage (por nombre de grupo y nombre de equipo).

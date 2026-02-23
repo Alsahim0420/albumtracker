@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
 import 'package:albumtracker/core/theme/app_colors.dart';
 
 class RepeatedStickersView extends StatefulWidget {
@@ -109,6 +112,14 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
       builder: (ctx) => _CountSheet(
         stickerId: stickerId,
         onDone: () => Navigator.of(ctx).pop(),
+        onSetCount: (newCount) async {
+          ctx.read<AlbumBloc>().add(
+                AlbumUpdateStickerCountRequested(
+                  stickerId: stickerId,
+                  count: newCount,
+                ),
+              );
+        },
       ),
     );
   }
@@ -484,14 +495,12 @@ class _CountSheet extends StatelessWidget {
   const _CountSheet({
     required this.stickerId,
     required this.onDone,
+    required this.onSetCount,
   });
 
   final String stickerId;
   final VoidCallback onDone;
-
-  Future<void> _setCount(int newCount) async {
-    await setStickerCount(stickerId, newCount);
-  }
+  final Future<void> Function(int newCount) onSetCount;
 
   @override
   Widget build(BuildContext context) {
@@ -550,7 +559,7 @@ class _CountSheet extends StatelessWidget {
                     onPressed: count <= 1
                         ? null
                         : () async {
-                            await _setCount(count - 1);
+                            await onSetCount(count - 1);
                             if (context.mounted && (count - 1) <= 1) onDone();
                           },
                   ),
@@ -567,7 +576,7 @@ class _CountSheet extends StatelessWidget {
                   _SheetButton(
                     icon: Icons.add_rounded,
                     onPressed: () async {
-                      await _setCount(count + 1);
+                      await onSetCount(count + 1);
                     },
                   ),
                 ],

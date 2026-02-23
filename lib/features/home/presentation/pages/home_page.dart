@@ -1,11 +1,14 @@
 // ignore_for_file: unnecessary_underscores
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
 import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/settings/presentation/pages/settings_page.dart';
 import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
@@ -142,7 +145,7 @@ class _HomePageState extends State<HomePage> {
         ),
         child: BulkAddStickersSheet(
           onConfirm: (globalNumbers) async {
-            await addStickersByGlobalNumbers(globalNumbers);
+            context.read<AlbumBloc>().add(AlbumBulkAddRequested(globalNumbers));
             if (context.mounted) setState(() {});
           },
         ),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
 import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Vista de pegatinas faltantes. Misma UI/UX que RepeatedStickersView.
@@ -104,6 +107,14 @@ class _MissingStickersViewState extends State<MissingStickersView> {
       builder: (ctx) => _AddOneSheet(
         stickerId: stickerId,
         onAdded: () => Navigator.of(ctx).pop(),
+        onMarkCollected: () async {
+          ctx.read<AlbumBloc>().add(
+                AlbumUpdateStickerCountRequested(
+                  stickerId: stickerId,
+                  count: 1,
+                ),
+              );
+        },
       ),
     );
   }
@@ -441,14 +452,12 @@ class _AddOneSheet extends StatelessWidget {
   const _AddOneSheet({
     required this.stickerId,
     required this.onAdded,
+    required this.onMarkCollected,
   });
 
   final String stickerId;
   final VoidCallback onAdded;
-
-  Future<void> _markAsCollected() async {
-    await setStickerCount(stickerId, 1);
-  }
+  final Future<void> Function() onMarkCollected;
 
   @override
   Widget build(BuildContext context) {
@@ -498,7 +507,7 @@ class _AddOneSheet extends StatelessWidget {
             height: 48,
             child: FilledButton(
               onPressed: () async {
-                await _markAsCollected();
+                await onMarkCollected();
                 if (context.mounted) onAdded();
               },
               style: FilledButton.styleFrom(
