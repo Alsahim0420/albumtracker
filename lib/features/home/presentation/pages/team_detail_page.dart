@@ -82,7 +82,6 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
       case StickerType.player:
         return TeamStickerType.player;
     }
-    throw StateError('Unknown StickerType: $t');
   }
 
   void _openStickerSheet(StickerModel sticker) {

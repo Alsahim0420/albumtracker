@@ -1,39 +1,612 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/storage/hive_storage.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
-/// Vista de pegatinas repetidas (duplicados). Se muestra al pulsar "Repetidas" en el bottom nav.
-class RepeatedStickersView extends StatelessWidget {
+class RepeatedStickersView extends StatefulWidget {
   const RepeatedStickersView({super.key});
 
   @override
+  State<RepeatedStickersView> createState() => _RepeatedStickersViewState();
+}
+
+class _RepeatedStickersViewState extends State<RepeatedStickersView> {
+  /// null = All, otherwise country code (e.g. BRA).
+  String? _selectedCountry;
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 88),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppConstants.homeNavRepeated,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 28),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
+    return ValueListenableBuilder<Box>(
+      valueListenable: collectionBox.listenable(),
+      builder: (context, box, _) {
+        final map = collectedStickersMap;
+        final repeatedEntries =
+            map.entries.where((e) => e.value > 1).toList();
+
+        if (repeatedEntries.isEmpty) {
+          return _buildEmptyState(context);
+        }
+
+        final totalDuplicates = _totalDuplicates(repeatedEntries);
+        final countries = _countriesFromEntries(repeatedEntries);
+        final filtered = _filterByCountry(repeatedEntries, _selectedCountry);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
                   Text(
-                    'Repetidas',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
+                    AppConstants.homeFilterSwaps,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Total repetidas: $totalDuplicates',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
                 ],
               ),
             ),
+            _CountryFilterTrigger(
+              selected: _selectedCountry,
+              countries: countries,
+              onSelect: (code) => setState(() => _selectedCountry = code),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const crossCount = 3;
+                  const padding = 16.0;
+                  const spacing = 10.0;
+                  final width = (constraints.maxWidth - 2 * padding - (crossCount - 1) * spacing) / crossCount;
+                  final itemHeight = width * 1.15;
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(padding, 0, padding, 88),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossCount,
+                      mainAxisSpacing: spacing,
+                      crossAxisSpacing: spacing,
+                      childAspectRatio: width / itemHeight,
+                    ),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final entry = filtered[index];
+                      return _RepeatedStickerCard(
+                        stickerId: entry.key,
+                        count: entry.value,
+                        onTap: () => _openCountSheet(context, entry.key, entry.value),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _openCountSheet(BuildContext context, String stickerId, int count) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _CountSheet(
+        stickerId: stickerId,
+        onDone: () => Navigator.of(ctx).pop(),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.collections_bookmark_outlined,
+              size: 64,
+              color: AppColors.placeholder.withValues(alpha: 0.6),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'No tienes laminas repetidas',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static int _totalDuplicates(List<MapEntry<String, int>> entries) {
+    return entries.fold(0, (sum, e) => sum + (e.value - 1));
+  }
+
+  static List<String> _countriesFromEntries(List<MapEntry<String, int>> entries) {
+    final set = <String>{};
+    for (final e in entries) {
+      set.add(_teamCodeFromStickerId(e.key));
+    }
+    final list = set.toList()..sort();
+    return list;
+  }
+
+  static List<MapEntry<String, int>> _filterByCountry(
+    List<MapEntry<String, int>> entries,
+    String? countryCode,
+  ) {
+    if (countryCode == null) return entries;
+    return entries
+        .where((e) => _teamCodeFromStickerId(e.key) == countryCode)
+        .toList();
+  }
+
+  static String _teamCodeFromStickerId(String stickerId) {
+    final idx = stickerId.indexOf('-');
+    return idx > 0 ? stickerId.substring(0, idx) : stickerId;
+  }
+}
+
+class _CountryFilterTrigger extends StatelessWidget {
+  const _CountryFilterTrigger({
+    required this.selected,
+    required this.countries,
+    required this.onSelect,
+  });
+
+  final String? selected;
+  final List<String> countries;
+  final void Function(String?) onSelect;
+
+  String get _label => selected == null ? 'Todos' : selected!;
+
+  void _openFilterSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _FilterSheet(
+        selected: selected,
+        countries: countries,
+        onSelect: (code) {
+          Navigator.of(ctx).pop();
+          onSelect(code);
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openFilterSheet(context),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.inputBorder.withValues(alpha: 0.6)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.filter_list_rounded,
+                  size: 22,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _label,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 24,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterSheet extends StatelessWidget {
+  const _FilterSheet({
+    required this.selected,
+    required this.countries,
+    required this.onSelect,
+  });
+
+  final String? selected;
+  final List<String> countries;
+  final void Function(String?) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxSheetHeight = MediaQuery.sizeOf(context).height * 0.6;
+    return Container(
+      constraints: BoxConstraints(maxHeight: maxSheetHeight),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.placeholder.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text(
+                'Filtrar por país',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _FilterListTile(
+                      label: 'Todos',
+                      isSelected: selected == null,
+                      onTap: () => onSelect(null),
+                    ),
+                    ...countries.map(
+                      (code) => _FilterListTile(
+                        label: code,
+                        isSelected: selected == code,
+                        onTap: () => onSelect(code),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterListTile extends StatelessWidget {
+  const _FilterListTile({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                size: 22,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Subtitle derived from stickerId: B=Badge, P=Photo, PL=Player.
+String _stickerSubtitleFromId(String stickerId) {
+  if (stickerId.contains('-PL-')) return 'Player';
+  if (stickerId.contains('-B-')) return 'Badge';
+  if (stickerId.contains('-P-')) return 'Photo';
+  return 'Sticker';
+}
+
+class _RepeatedStickerCard extends StatelessWidget {
+  const _RepeatedStickerCard({
+    required this.stickerId,
+    required this.count,
+    required this.onTap,
+  });
+
+  final String stickerId;
+  final int count;
+  final VoidCallback onTap;
+
+  int get _duplicateCount => count - 1;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.inputBorder.withValues(alpha: 0.6)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    stickerId,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                        ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _stickerSubtitleFromId(stickerId),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.swapGreen,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.swapGreenDark.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    '$_duplicateCount',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CountSheet extends StatelessWidget {
+  const _CountSheet({
+    required this.stickerId,
+    required this.onDone,
+  });
+
+  final String stickerId;
+  final VoidCallback onDone;
+
+  Future<void> _setCount(int newCount) async {
+    await setStickerCount(stickerId, newCount);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Box>(
+      valueListenable: collectionBox.listenable(),
+      builder: (context, box, _) {
+        final count = collectedStickersMap[stickerId] ?? 0;
+        final duplicateCount = count > 1 ? count - 1 : 0;
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.placeholder.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                stickerId,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              Text(
+                _stickerSubtitleFromId(stickerId),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _SheetButton(
+                    icon: Icons.remove_rounded,
+                    onPressed: count <= 1
+                        ? null
+                        : () async {
+                            await _setCount(count - 1);
+                            if (context.mounted && (count - 1) <= 1) onDone();
+                          },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      '$duplicateCount',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                    ),
+                  ),
+                  _SheetButton(
+                    icon: Icons.add_rounded,
+                    onPressed: () async {
+                      await _setCount(count + 1);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SheetButton extends StatelessWidget {
+  const _SheetButton({required this.icon, this.onPressed});
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: onPressed != null
+                ? AppColors.primary.withValues(alpha: 0.2)
+                : AppColors.inputBorder.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 28,
+            color: onPressed != null ? AppColors.primary : AppColors.placeholder,
+          ),
+        ),
       ),
     );
   }
