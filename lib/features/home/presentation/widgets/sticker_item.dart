@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Estado de una pegatina en el álbum.
 enum StickerState {

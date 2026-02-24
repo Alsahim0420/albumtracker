@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../models/team_sticker_item.dart';
+import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
+import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 
 /// Bottom sheet para marcar cantidad de una pegatina (+ / - y Listo).
 class StickerCountSheet extends StatefulWidget {

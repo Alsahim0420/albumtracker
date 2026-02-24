@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 enum HomeTab { groups, teams, specials, marketplace }
 
@@ -29,21 +29,9 @@ class HomeTabs extends StatelessWidget {
           ),
           const SizedBox(width: 20),
           _TabLabel(
-            label: AppConstants.homeTabTeams,
-            isSelected: selected == HomeTab.teams,
-            onTap: () => onChanged?.call(HomeTab.teams),
-          ),
-          const SizedBox(width: 20),
-          _TabLabel(
             label: AppConstants.homeTabSpecials,
             isSelected: selected == HomeTab.specials,
             onTap: () => onChanged?.call(HomeTab.specials),
-          ),
-          const SizedBox(width: 20),
-          _TabLabel(
-            label: AppConstants.homeTabMarketplace,
-            isSelected: selected == HomeTab.marketplace,
-            onTap: () => onChanged?.call(HomeTab.marketplace),
           ),
         ],
       ),

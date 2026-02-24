@@ -3,18 +3,22 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/models/sticker_model.dart';
-import '../../../../core/models/team_model.dart';
-import '../../../../core/repository/album_repository.dart';
-import '../../../../core/storage/hive_storage.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../models/team_sticker_item.dart';
-import '../widgets/flag_placeholder.dart';
+import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/models/sticker_model.dart';
+import 'package:albumtracker/core/models/team_model.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:albumtracker/core/repository/album_repository.dart';
+import 'package:albumtracker/core/storage/hive_storage.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
+import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
+import 'package:albumtracker/features/home/presentation/widgets/flag_placeholder.dart';
 import '../widgets/sticker_count_sheet.dart';
-import '../widgets/team_completion_card.dart';
-import '../widgets/team_sticker_card.dart';
-import '../widgets/team_sticker_filter_tabs.dart';
+import 'package:albumtracker/features/home/presentation/widgets/team_completion_card.dart';
+import 'package:albumtracker/features/home/presentation/widgets/team_sticker_card.dart';
+import 'package:albumtracker/features/home/presentation/widgets/team_sticker_filter_tabs.dart';
 
 /// Vista de detalle de un equipo: cabecera, estado, filtros y rejilla de pegatinas.
 class TeamDetailPage extends StatelessWidget {
@@ -93,7 +97,14 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
         sticker: _toStickerItems().firstWhere((i) => i.code == sticker.code),
         initialCount: count,
         onDone: (newCount) async {
-          await setStickerCount(sticker.id, newCount);
+          if (ctx.mounted) {
+            ctx.read<AlbumBloc>().add(
+                  AlbumUpdateStickerCountRequested(
+                    stickerId: sticker.id,
+                    count: newCount,
+                  ),
+                );
+          }
         },
       ),
     );

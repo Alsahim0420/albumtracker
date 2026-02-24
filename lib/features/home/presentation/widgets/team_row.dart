@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../models/group_team_item.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
+import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
 import 'flag_placeholder.dart';
 
 /// Fila de equipo: bandera, nombre, barra de progreso, contador y chevron/check.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Encabezado de sección del álbum (ej. FWC • INTRO, FRA • FRANCE).
 class SectionHeader extends StatelessWidget {
