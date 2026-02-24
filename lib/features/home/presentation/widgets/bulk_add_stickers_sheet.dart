@@ -68,9 +68,10 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.splashBackground,
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
@@ -83,7 +84,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.inputBorder,
+                color: colors.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -111,7 +112,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: AppColors.textPrimary, size: 24),
+                    icon: Icon(Icons.close, color: colors.onSurface, size: 24),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
@@ -124,20 +125,20 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: colors.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline, size: 20, color: AppColors.primary),
+                    Icon(Icons.info_outline, size: 20, color: colors.primary),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         AppConstants.bulkAddInfoText,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
+                              color: colors.onSurfaceVariant,
                               height: 1.35,
                             ),
                       ),
@@ -157,20 +158,20 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                     focusNode: _focusNode,
                     maxLines: 5,
                     minLines: 4,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface),
                     decoration: InputDecoration(
                       hintText: AppConstants.bulkAddPlaceholder,
-                      hintStyle: const TextStyle(color: AppColors.placeholder),
+                      hintStyle: TextStyle(color: colors.onSurfaceVariant),
                       filled: true,
-                      fillColor: AppColors.inputBackground,
+                      fillColor: colors.surfaceContainerHighest,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.inputBorder),
+                          borderSide: BorderSide(color: colors.outlineVariant),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                        borderSide: BorderSide(color: colors.primary, width: 1.5),
                       ),
                       contentPadding: const EdgeInsets.fromLTRB(14, 14, 14, 32),
                     ),
@@ -193,7 +194,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                 child: Text(
                   AppConstants.bulkAddExampleFormat,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.placeholder,
+                        color: colors.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -285,17 +286,18 @@ class _ExampleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.primaryContainer,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.inputBorder),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
+              color: colors.onSurfaceVariant,
               fontFamily: 'monospace',
             ),
       ),

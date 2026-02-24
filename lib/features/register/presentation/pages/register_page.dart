@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../widgets/register_header.dart';
 
 /// Pantalla de registro: nombre, email, contraseña y creación de cuenta.
@@ -28,8 +27,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: colors.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -41,31 +41,33 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 32),
               Text(
                 AppConstants.registerFullNameLabel,
-                style: Theme.of(context).textTheme.labelLarge,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: AppConstants.registerFullNameHint,
+                  hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ),
               const SizedBox(height: 20),
               Text(
                 AppConstants.registerEmailLabel,
-                style: Theme.of(context).textTheme.labelLarge,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: AppConstants.registerEmailHint,
+                  hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ),
               const SizedBox(height: 20),
               Text(
                 AppConstants.registerPasswordLabel,
-                style: Theme.of(context).textTheme.labelLarge,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -78,12 +80,13 @@ class _RegisterPageState extends State<RegisterPage> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       size: 22,
-                      color: AppColors.inputIcon,
+                      color: colors.onSurfaceVariant,
                     ),
                     onPressed: () {
                       setState(() => _obscurePassword = !_obscurePassword);
                     },
                   ),
+                  hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ),
               const SizedBox(height: 28),
@@ -92,7 +95,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(AppConstants.registerButton),
+                    Text(AppConstants.registerButton, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
                     const SizedBox(width: 8),
                     const Icon(Icons.arrow_forward, size: 20),
                   ],
@@ -104,19 +107,19 @@ class _RegisterPageState extends State<RegisterPage> {
                 children: [
                   Text(
                     AppConstants.registerHasAccount,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface),
                   ),
                   TextButton(
                     onPressed: widget.onLogIn,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
+                      foregroundColor: colors.onSurface,
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
+                        child: Text(
                       AppConstants.registerLogIn,
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface,
                         decoration: TextDecoration.underline,
                         fontWeight: FontWeight.w600,
                       ),
@@ -149,9 +152,10 @@ class _TermsFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final style = Theme.of(context).textTheme.bodySmall;
     final linkStyle = style?.copyWith(
-      color: AppColors.primary,
+      color: colors.onSurface,
       decoration: TextDecoration.underline,
     );
     return Wrap(

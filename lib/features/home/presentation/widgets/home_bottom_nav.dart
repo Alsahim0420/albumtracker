@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Índice de la pestaña inferior.
 enum HomeNavItem { album, repeated, missing, settings }
@@ -24,9 +23,10 @@ class HomeBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.navBarBackground,
+        color: colors.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
@@ -95,7 +95,8 @@ class _NavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : AppColors.navUnselected;
+    final colors = Theme.of(context).colorScheme;
+    final color = isSelected ? colors.primary : colors.onSurface.withValues(alpha: 0.6);
     return InkWell(
       onTap: onTap,
       child: Padding(
