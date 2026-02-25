@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 enum TeamStickerFilter { all, missing, duplicates }
 
@@ -20,6 +19,7 @@ class TeamStickerFilterTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: Row(
@@ -42,7 +42,7 @@ class TeamStickerFilterTabs extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _Chip(
-              label: '${AppConstants.teamDetailDuplicates} ($duplicateCount)',
+              label: '${colors.onSurface} ($duplicateCount)',
               isSelected: selected == TeamStickerFilter.duplicates,
               onTap: () => onChanged?.call(TeamStickerFilter.duplicates),
             ),
@@ -66,20 +66,21 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.cardBackground,
+          color: isSelected ? colors.primary : colors.primaryContainer,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.inputBorder),
+          border: Border.all(color: colors.outlineVariant),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                color: isSelected ? colors.onPrimary : colors.onSurfaceVariant,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
           textAlign: TextAlign.center,

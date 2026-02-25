@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_underscores
+// ignore_for_file: unused_local_variable, unnecessary_underscores
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -10,7 +10,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
@@ -112,6 +111,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final team = widget.team;
     final stickers = team.stickers;
     final total = stickers.length;
@@ -129,27 +129,27 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
       valueListenable: collectionBox.listenable(),
       builder: (context, __, ___) {
         return Scaffold(
-          backgroundColor: AppColors.splashBackground,
+          backgroundColor: colors.surface,
           appBar: AppBar(
-            backgroundColor: AppColors.splashBackground,
+            backgroundColor: colors.surface,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 20),
+              icon: Icon(Icons.arrow_back_ios, color: colors.onSurface, size: 20),
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: Text(
               AppConstants.teamDetailBackGroups,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colors.onSurface),
             ),
             centerTitle: false,
             actions: [
               IconButton(
                 onPressed: () {},
-                icon: const Icon(Icons.share_outlined, color: AppColors.textPrimary, size: 22),
+                icon: Icon(Icons.share_outlined, color: colors.onSurface, size: 22),
               ),
               IconButton(
                 onPressed: () {},
-                icon: const Icon(Icons.more_vert, color: AppColors.textPrimary, size: 22),
+                icon: Icon(Icons.more_vert, color: colors.onSurface, size: 22),
               ),
             ],
           ),
@@ -161,7 +161,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
                 _TeamHeader(
                   teamName: team.name,
                   groupName: widget.groupName,
-                  flagAssetPath: team.flagAssetPath,
+                  flagAssetPath: team.flagAssetPath ?? '',
                 ),
                 const SizedBox(height: 16),
                 TeamCompletionCard(
@@ -179,7 +179,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
                   child: Text(
                     AppConstants.teamDetailSquadMembers,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.placeholder,
+                          color: colors.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
                         ),
@@ -190,6 +190,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
+                      final colors = Theme.of(context).colorScheme;
                       const crossCount = 3;
                       final spacing = 10.0;
                       final size = (constraints.maxWidth - (crossCount - 1) * spacing) / crossCount;
@@ -246,6 +247,7 @@ class _TeamHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -260,7 +262,7 @@ class _TeamHeader extends StatelessWidget {
                   )
                 : Container(
                     decoration: BoxDecoration(
-                      color: AppColors.inputBorder,
+                      color: colors.outlineVariant,
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
@@ -280,7 +282,7 @@ class _TeamHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   AppConstants.teamDetailGroupEvent.replaceFirst('%s', groupName),
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ],
             ),

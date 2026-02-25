@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 
 /// Card de una pegatina en la rejilla del equipo (encontrada o faltante).
@@ -21,15 +20,16 @@ class TeamStickerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCollected = count != null ? (count! > 0) : sticker.collected;
+    final colors = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isCollected ? AppColors.primary : AppColors.itemMissing,
+          color: isCollected ? colors.primary : colors.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
           border: isCollected
               ? null
-              : Border.all(color: AppColors.inputBorder, width: 1),
+              : Border.all(color: colors.outlineVariant, width: 1),
         ),
         child: Stack(
           children: [
@@ -43,8 +43,8 @@ class TeamStickerCard extends StatelessWidget {
                     sticker.code,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: isCollected
-                              ? AppColors.textPrimary.withValues(alpha: 0.9)
-                              : AppColors.textSecondary,
+                              ? colors.onPrimary.withValues(alpha: 0.9)
+                              : colors.onSurfaceVariant,
                           fontSize: 11,
                         ),
                   ),
@@ -61,22 +61,22 @@ class TeamStickerCard extends StatelessWidget {
                       ? Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.swapGreenDark,
+                            color: colors.primaryContainer,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '$count',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style:TextStyle(
+                              color: colors.onSurface,
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                         )
-                      : const Icon(Icons.check_circle, color: AppColors.textPrimary, size: 20)
+                      : Icon(Icons.check_circle, color: colors.onSurface, size: 20)
                   : Icon(
                       Icons.circle_outlined,
-                      color: AppColors.textSecondary.withValues(alpha: 0.6),
+                      color: colors.onSurfaceVariant.withValues(alpha: 0.6),
                       size: 20,
                     ),
             ),
@@ -87,8 +87,9 @@ class TeamStickerCard extends StatelessWidget {
   }
 
   Widget _buildCenterContent(BuildContext context, bool isCollected) {
+    final colors = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: isCollected ? AppColors.textPrimary : AppColors.textSecondary,
+          color: isCollected ? colors.onPrimary : colors.onSurfaceVariant,
           fontWeight: FontWeight.w600,
           fontSize: 12,
         );
@@ -109,14 +110,14 @@ class TeamStickerCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 20, color: AppColors.textSecondary),
+          Icon(icon, size: 20, color: colors.onSurfaceVariant),
           const SizedBox(height: 4),
           Text(AppConstants.teamDetailTeamPhoto, style: textStyle),
           Text(
             AppConstants.teamDetailNotFound,
             style: textStyle?.copyWith(
               fontSize: 10,
-              color: AppColors.placeholder,
+              color: colors.onSurfaceVariant,
             ),
           ),
         ],
@@ -127,7 +128,7 @@ class TeamStickerCard extends StatelessWidget {
         Icon(
           icon,
           size: 18,
-          color: isCollected ? AppColors.textPrimary : AppColors.textSecondary,
+            color: isCollected ? colors.onPrimary : colors.onSurfaceVariant,
         ),
         const SizedBox(width: 6),
         Expanded(

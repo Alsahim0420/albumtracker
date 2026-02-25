@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
 import 'flag_placeholder.dart';
 
@@ -17,15 +16,16 @@ class TeamRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Material(
-      color: AppColors.cardBackground,
+      color: colors.primaryContainer,
       child: InkWell(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: AppColors.inputBorder, width: 1),
+              bottom: BorderSide(color: colors.outlineVariant, width: 1),
             ),
           ),
           child: Row(
@@ -40,7 +40,7 @@ class TeamRow extends StatelessWidget {
                       )
                     : Container(
                         decoration: BoxDecoration(
-                          color: AppColors.inputBorder,
+                          color: colors.outlineVariant,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -53,7 +53,7 @@ class TeamRow extends StatelessWidget {
                     Text(
                       team.name,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textPrimary,
+                            color: colors.onSurface,
                           ),
                     ),
                     const SizedBox(height: 6),
@@ -61,9 +61,9 @@ class TeamRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(2),
                       child: LinearProgressIndicator(
                         value: team.percent,
-                        backgroundColor: AppColors.progressTrack,
+                        backgroundColor: colors.primary.withValues(alpha: 0.5),
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          team.isComplete ? AppColors.swapGreen : AppColors.primary,
+                          team.isComplete ? colors.primaryContainer : colors.primary,
                         ),
                         minHeight: 4,
                       ),
@@ -78,8 +78,8 @@ class TeamRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               team.isComplete
-                  ? Icon(Icons.check_circle, color: AppColors.swapGreen, size: 22)
-                  : const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 22),
+                  ? Icon(Icons.check_circle, color: colors.primaryContainer, size: 22)
+                  : Icon(Icons.chevron_right, color: colors.onSurfaceVariant, size: 22),
             ],
           ),
         ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Card de progreso total: "TOTAL COLLECTION", barra verde y contador.
 class TotalCollectionCard extends StatelessWidget {
@@ -17,11 +16,12 @@ class TotalCollectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percent = total > 0 ? (collected / total).clamp(0.0, 1.0) : 0.0;
+    final colors = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: colors.primaryContainer,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -30,7 +30,7 @@ class TotalCollectionCard extends StatelessWidget {
           Text(
             AppConstants.homeTotalCollection,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: colors.onSurface,
                   letterSpacing: 0.5,
                 ),
           ),
@@ -39,8 +39,8 @@ class TotalCollectionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: percent,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.5),
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.swapGreen),
+              backgroundColor: colors.primary.withValues(alpha: 0.5),
+              valueColor: AlwaysStoppedAnimation<Color>(colors.primaryContainer),
               minHeight: 8,
             ),
           ),
@@ -56,7 +56,7 @@ class TotalCollectionCard extends StatelessWidget {
                   Text(
                     '$collected',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: colors.onSurface,
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                         ),
@@ -64,7 +64,7 @@ class TotalCollectionCard extends StatelessWidget {
                   Text(
                     '/$total',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textPrimary.withValues(alpha: 0.8),
+                          color: colors.onSurfaceVariant.withValues(alpha: 0.8),
                         ),
                   ),
                 ],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
 import 'team_row.dart';
 
@@ -18,6 +17,7 @@ class GroupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -28,11 +28,15 @@ class GroupSection extends StatelessWidget {
             children: [
               Text(
                 group.name,
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: colors.onSurface,
+                    ),
               ),
               Text(
                 '${group.percentComplete}% ${AppConstants.homeComplete}',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
               ),
             ],
           ),
@@ -41,9 +45,9 @@ class GroupSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.cardBackground,
+              color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.inputBorder),
+              border: Border.all(color: colors.outlineVariant),
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(

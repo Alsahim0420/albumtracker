@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/storage/hive_storage.dart';
-import '../../../../core/theme/app_colors.dart';
 
 /// Pantalla de personalización (onboarding). Solo se muestra en el primer arranque.
 /// Nombre obligatorio; equipo favorito y color de perfil opcionales.
@@ -78,8 +77,9 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: colors.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -91,17 +91,17 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                 const SizedBox(height: 32),
                 Text(
                   AppConstants.personalizationTitle,
-                  style: Theme.of(context).textTheme.headlineMedium,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: colors.onSurface),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   AppConstants.personalizationSubtitle,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 32),
                 Text(
                   AppConstants.personalizationNameLabel,
-                  style: Theme.of(context).textTheme.labelLarge,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface)    ,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -121,7 +121,7 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                 const SizedBox(height: 24),
                 Text(
                   AppConstants.personalizationFavoriteTeamLabel,
-                  style: Theme.of(context).textTheme.labelLarge,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
@@ -129,13 +129,13 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                   decoration: const InputDecoration(
                     hintText: AppConstants.personalizationFavoriteTeamHint,
                   ),
-                  dropdownColor: AppColors.inputBackground,
+                  dropdownColor: colors.surfaceContainerHighest,
                   items: _teamOptions.map((t) {
                     return DropdownMenuItem<String>(
                       value: t,
                       child: Text(
-                        t.isEmpty ? '— None —' : t,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        t.isEmpty ? '— None —' : t.toUpperCase(),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface),
                       ),
                     );
                   }).toList(),
@@ -144,7 +144,7 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                 const SizedBox(height: 24),
                 Text(
                   AppConstants.personalizationColorLabel,
-                  style: Theme.of(context).textTheme.labelLarge,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -164,8 +164,8 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.textPrimary
-                                  : Colors.transparent,
+                                  ? colors.onSurface
+                                  : colors.outlineVariant,
                               width: 3,
                             ),
                             boxShadow: [
@@ -185,15 +185,15 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                 ElevatedButton(
                   onPressed: _isSaving ? null : _onContinue,
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 22,
                           width: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.textPrimary,
+                            color: colors.onSurface,
                           ),
                         )
-                      : const Text(AppConstants.personalizationContinue),
+                      : Text(AppConstants.personalizationContinue, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
                 ),
                 const SizedBox(height: 24),
               ],
