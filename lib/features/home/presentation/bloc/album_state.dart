@@ -1,24 +1,43 @@
+// ignore_for_file: use_super_parameters
+
 import 'package:equatable/equatable.dart';
 
-/// Estado del [AlbumBloc].
-sealed class AlbumState extends Equatable {
-  const AlbumState();
+/// Estado base con datos compartidos (lista/albumData, loading, error). Equatable.
+abstract class AlbumState extends Equatable {
+  const AlbumState({
+    this.albumData = const {},
+    this.isLoading = false,
+    this.errorMessage,
+  });
+
+  final Map<String, int> albumData;
+  final bool isLoading;
+  final String? errorMessage;
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [albumData, isLoading, errorMessage];
 }
 
-/// Estado inicial / inactivo.
-final class AlbumInitial extends AlbumState {
-  const AlbumInitial();
+/// Estado inicial.
+class AlbumInitial extends AlbumState {
+  const AlbumInitial() : super();
 }
 
-/// Error al ejecutar una mutación.
-final class AlbumLoadFailure extends AlbumState {
-  const AlbumLoadFailure(this.message);
+/// Cargando; mantiene datos previos.
+class AlbumLoading extends AlbumState {
+  const AlbumLoading({required Map<String, int> previous})
+      : super(albumData: previous, isLoading: true);
+}
 
-  final String message;
+/// Datos cargados.
+class AlbumLoaded extends AlbumState {
+  const AlbumLoaded({required super.albumData}) : super(isLoading: false);
+}
 
-  @override
-  List<Object?> get props => [message];
+/// Error; mantiene datos previos.
+class AlbumError extends AlbumState {
+  const AlbumError({
+    required String message,
+    required Map<String, int> previous,
+  }) : super(albumData: previous, errorMessage: message);
 }

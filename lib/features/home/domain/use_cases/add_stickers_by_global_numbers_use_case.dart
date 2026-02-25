@@ -1,10 +1,16 @@
-import 'package:albumtracker/core/repository/album_repository.dart';
+import 'package:albumtracker/core/error/failures.dart';
+import 'package:albumtracker/core/usecase/usecase.dart';
+import 'package:albumtracker/features/home/domain/repositories/album_repository.dart';
+import 'package:albumtracker/features/home/domain/use_cases/add_stickers_params.dart';
+import 'package:dartz/dartz.dart';
 
-/// Caso de uso: añadir pegatinas por números globales (bulk add).
-class AddStickersByGlobalNumbersUseCase {
-  AddStickersByGlobalNumbersUseCase();
+class AddStickersByGlobalNumbersUseCase extends UseCase<void, AddStickersParams> {
+  final AlbumRepository repository;
 
-  Future<void> call(Iterable<int> globalNumbers) async {
-    await AlbumRepository.addStickersByGlobalNumbers(globalNumbers);
+  AddStickersByGlobalNumbersUseCase({required this.repository});
+
+  @override
+  Future<Either<Failure, void>> call(AddStickersParams params) {
+    return repository.addStickersByGlobalNumbers(params.globalNumbers);
   }
 }
