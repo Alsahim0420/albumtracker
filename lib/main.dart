@@ -1,12 +1,13 @@
+// ignore_for_file: unused_local_variable
+
+import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
+import 'package:albumtracker/core/theme/team_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/storage/hive_storage.dart';
-import 'core/theme/app_theme.dart';
 import 'features/home/presentation/bloc/album_bloc.dart';
 import 'features/home/presentation/pages/home_page.dart';
-import 'features/personalization/presentation/pages/personalization_page.dart';
-import 'features/splash/presentation/pages/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +15,33 @@ void main() async {
   runApp(const AlbumTrackerApp());
 }
 
-class AlbumTrackerApp extends StatelessWidget {
-  const AlbumTrackerApp({super.key});
+class AlbumTrackerApp extends StatefulWidget {
+  const AlbumTrackerApp({super.key,});
+
+  @override
+  State<AlbumTrackerApp> createState() => AlbumTrackerAppState();
+}
+
+class AlbumTrackerAppState extends State<AlbumTrackerApp> {
+  late ThemeData _theme;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  void _loadTheme() {
+    final team =
+        WorldCup2026Seed.getTeamById(storedFavoriteTeam ?? '');
+    _theme = TeamTheme.fromTeamId(storedFavoriteTeam);
+  }
+
+  void updateTheme(String? teamId) {
+    setState(() {
+      _theme = TeamTheme.fromTeamId(teamId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,42 +49,15 @@ class AlbumTrackerApp extends StatelessWidget {
       create: (_) => AlbumBloc(),
       child: MaterialApp(
         title: 'Album Tracker',
-        theme: AppTheme.dark,
+        theme: _theme,
         debugShowCheckedModeBanner: false,
-        home: const _AppEntry(),
+        home: HomePage(
+          onThemeChanged: updateTheme,
+        ),
       ),
     );
   }
 }
 
 /// Controla el flujo de entrada: splash → personalización (solo primera vez) o Home.
-class _AppEntry extends StatefulWidget {
-  const _AppEntry();
 
-  @override
-  State<_AppEntry> createState() => _AppEntryState();
-}
-
-class _AppEntryState extends State<_AppEntry> {
-  Widget? _postSplashScreen;
-
-  void _onSplashComplete() {
-    if (hasCompletedOnboarding) {
-      setState(() => _postSplashScreen = const HomePage());
-    } else {
-      setState(() => _postSplashScreen = PersonalizationPage(
-            onComplete: () {
-              setState(() => _postSplashScreen = const HomePage());
-            },
-          ));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_postSplashScreen != null) {
-      return _postSplashScreen!;
-    }
-    return SplashPage(onComplete: _onSplashComplete);
-  }
-}

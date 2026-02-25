@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/constants/app_constants.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Cabecera Home rediseñada: título, subtítulo y búsqueda.
 class HomeHeaderV2 extends StatelessWidget {
@@ -14,6 +13,7 @@ class HomeHeaderV2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
       child: Row(
@@ -34,7 +34,7 @@ class HomeHeaderV2 extends StatelessWidget {
                 Text(
                   AppConstants.homeAlbumCollection,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: colors.onSurfaceVariant,
                         letterSpacing: 0.5,
                       ),
                 ),
@@ -43,7 +43,7 @@ class HomeHeaderV2 extends StatelessWidget {
           ),
           IconButton(
             onPressed: onSearch,
-            icon: const Icon(Icons.search, color: AppColors.textPrimary, size: 24),
+            icon: Icon(Icons.search, color: colors.onSurface, size: 24),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
           ),
