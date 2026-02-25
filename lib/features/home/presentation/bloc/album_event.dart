@@ -31,3 +31,9 @@ final class AlbumBulkAddRequested extends AlbumEvent {
   @override
   List<Object?> get props => [globalNumbers];
 }
+final class AlbumLoadRequested extends AlbumEvent {
+  const AlbumLoadRequested();
+
+  @override
+  List<Object?> get props => [];
+}

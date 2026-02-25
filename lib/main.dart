@@ -5,6 +5,7 @@ import 'package:albumtracker/core/theme/team_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/injection.dart';
 import 'core/storage/hive_storage.dart';
 import 'features/home/presentation/bloc/album_bloc.dart';
 import 'features/home/presentation/pages/home_page.dart';
@@ -12,6 +13,7 @@ import 'features/home/presentation/pages/home_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initHive();
+  await init();
   runApp(const AlbumTrackerApp());
 }
 
@@ -46,7 +48,7 @@ class AlbumTrackerAppState extends State<AlbumTrackerApp> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<AlbumBloc>(
-      create: (_) => AlbumBloc(),
+      create: (_) => sl<AlbumBloc>(),
       child: MaterialApp(
         title: 'Album Tracker',
         theme: _theme,
