@@ -11,24 +11,24 @@ import 'package:get_it/get_it.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  // 1. DataSource
+
   sl.registerLazySingleton<AlbumLocalDatasource>(
     () => AlbumLocalDataSourceImpl(),
   );
 
-  // 2. Repository (interfaz domain → impl data)
+
   sl.registerLazySingleton<AlbumRepository>(
     () => AlbumRepositoryImpl(localDataSource: sl()),
   );
 
-  // 3. Use cases
+
   sl.registerLazySingleton(() => GetAlbumDataUseCase(repository: sl()));
   sl.registerLazySingleton(() => UpdateStickerCountUseCase(repository: sl()));
   sl.registerLazySingleton(
     () => AddStickersByGlobalNumbersUseCase(repository: sl()),
   );
 
-  // 4. Bloc (factory: una instancia por pantalla)
+
   sl.registerFactory(
     () => AlbumBloc(
       getAlbumDataUseCase: sl(),
