@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Cabecera Home rediseñada: título, subtítulo y búsqueda.
 class HomeHeaderV2 extends StatelessWidget {

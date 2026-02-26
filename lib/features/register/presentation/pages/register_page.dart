@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/register/presentation/widgets/register_header.dart';
 
 /// Pantalla de registro: nombre, email, contraseña y creación de cuenta.

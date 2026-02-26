@@ -1,3 +1,5 @@
+import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
+import 'package:albumtracker/core/theme/team_theme.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +12,7 @@ import 'features/home/presentation/pages/home_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initHive();
+  await init();
   await EasyLocalization.ensureInitialized();
   runApp(EasyLocalization(
     supportedLocales: const [
@@ -23,23 +26,10 @@ void main() async {
 }
 
 class AlbumTrackerApp extends StatefulWidget {
-  const AlbumTrackerApp({super.key,});
+  const AlbumTrackerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider<AlbumBloc>(
-      create: (_) => AlbumBloc(),
-      child: MaterialApp(
-        title: 'appName'.tr(),
-        theme: AppTheme.dark,
-        localizationsDelegates: context.localizationDelegates,
-        debugShowCheckedModeBanner: false,
-        supportedLocales: context.supportedLocales,
-        locale: context.locale,
-        home: const _AppEntry(),
-      ),
-    );
-  }
+  State<AlbumTrackerApp> createState() => AlbumTrackerAppState();
 }
 
 class AlbumTrackerAppState extends State<AlbumTrackerApp> {
@@ -52,8 +42,7 @@ class AlbumTrackerAppState extends State<AlbumTrackerApp> {
   }
 
   void _loadTheme() {
-    final team =
-        WorldCup2026Seed.getTeamById(storedFavoriteTeam ?? '');
+    WorldCup2026Seed.getTeamById(storedFavoriteTeam ?? '');
     _theme = TeamTheme.fromTeamId(storedFavoriteTeam);
   }
 
@@ -68,8 +57,11 @@ class AlbumTrackerAppState extends State<AlbumTrackerApp> {
     return BlocProvider<AlbumBloc>(
       create: (_) => sl<AlbumBloc>(),
       child: MaterialApp(
-        title: 'Album Collect 2026',
+        title: 'appName'.tr(),
         theme: _theme,
+        localizationsDelegates: context.localizationDelegates,
+        supportedLocales: context.supportedLocales,
+        locale: context.locale,
         debugShowCheckedModeBanner: false,
         home: HomePage(
           onThemeChanged: updateTheme,
