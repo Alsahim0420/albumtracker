@@ -1,6 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 
 /// Card de progreso total: "TOTAL COLLECTION", barra verde y contador.
 class TotalCollectionCard extends StatelessWidget {
@@ -28,7 +28,7 @@ class TotalCollectionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            AppConstants.homeTotalCollection,
+            'homeTotalCollection'.tr(),
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: colors.onSurface,
                   letterSpacing: 0.5,

@@ -1,6 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 
 enum HomeFilter { all, missing, swaps }
 
@@ -22,19 +22,19 @@ class FilterSegments extends StatelessWidget {
       child: Row(
         children: [
           _Segment(
-            label: AppConstants.homeFilterAll,
+            label: 'homeFilterAll'.tr(),
             isSelected: selected == HomeFilter.all,
             isFirst: true,
             onTap: () => onChanged?.call(HomeFilter.all),
           ),
           _Segment(
-            label: AppConstants.homeFilterMissing,
+            label: 'homeFilterMissing'.tr(),
             isSelected: selected == HomeFilter.missing,
             isFirst: false,
             onTap: () => onChanged?.call(HomeFilter.missing),
           ),
           _Segment(
-            label: AppConstants.homeFilterSwaps,
+            label: 'homeFilterSwaps'.tr(),
             isSelected: selected == HomeFilter.swaps,
             isFirst: false,
             isLast: true,

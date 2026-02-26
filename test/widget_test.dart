@@ -15,6 +15,6 @@ void main() {
     await tester.pumpWidget(const AlbumTrackerApp());
 
     // Verify that the splash screen shows the app name.
-    expect(find.text('Album Tracker'), findsOneWidget);
+    expect(find.text('Album Collect 2026'), findsOneWidget);
   });
 }

@@ -1,6 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 
 /// Cabecera Home rediseñada: título, subtítulo y búsqueda.
 class HomeHeaderV2 extends StatelessWidget {
@@ -24,7 +24,7 @@ class HomeHeaderV2 extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppConstants.homeTitle,
+                  'title'.tr(),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -32,7 +32,7 @@ class HomeHeaderV2 extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  AppConstants.homeAlbumCollection,
+                  'homeAlbumCollection'.tr(),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: colors.onSurfaceVariant,
                         letterSpacing: 0.5,

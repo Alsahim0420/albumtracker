@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../widgets/register_header.dart';
+import 'package:albumtracker/features/register/presentation/widgets/register_header.dart';
 
 /// Pantalla de registro: nombre, email, contraseña y creación de cuenta.
 class RegisterPage extends StatefulWidget {
@@ -40,40 +40,38 @@ class _RegisterPageState extends State<RegisterPage> {
               const RegisterHeader(),
               const SizedBox(height: 32),
               Text(
-                AppConstants.registerFullNameLabel,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
+                'registerFullNameLabel'.tr(),
+                style: Theme.of(context).textTheme.labelLarge,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
-                  hintText: AppConstants.registerFullNameHint,
-                  hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                  hintText: 'registerFullNameHint'.tr(),
                 ),
               ),
               const SizedBox(height: 20),
               Text(
-                AppConstants.registerEmailLabel,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
+                'registerEmailLabel'.tr(),
+                style: Theme.of(context).textTheme.labelLarge,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintText: AppConstants.registerEmailHint,
-                  hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                  hintText: 'registerEmailHint'.tr(),
                 ),
               ),
               const SizedBox(height: 20),
               Text(
-                AppConstants.registerPasswordLabel,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
+                'registerPasswordLabel'.tr(),
+                style: Theme.of(context).textTheme.labelLarge,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
-                  hintText: AppConstants.registerPasswordHint,
+                  hintText: 'registerPasswordHint'.tr(),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
@@ -95,7 +93,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(AppConstants.registerButton, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
+                    Text('registerButton'.tr()),
                     const SizedBox(width: 8),
                     const Icon(Icons.arrow_forward, size: 20),
                   ],
@@ -106,8 +104,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    AppConstants.registerHasAccount,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface),
+                    'registerHasAccount'.tr(),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   TextButton(
                     onPressed: widget.onLogIn,
@@ -117,9 +115,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                        child: Text(
-                      AppConstants.registerLogIn,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface,
+                    child: Text(
+                      'registerLogIn'.tr(),
+                      style: TextStyle(
                         decoration: TextDecoration.underline,
                         fontWeight: FontWeight.w600,
                       ),
@@ -162,17 +160,17 @@ class _TermsFooter extends StatelessWidget {
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text(AppConstants.registerTermsPrefix, style: style),
+        Text('registerTermsPrefix'.tr(), style: style),
         GestureDetector(
           onTap: onTermsOfService,
-          child: Text(AppConstants.registerTermsOfService, style: linkStyle),
+          child: Text('registerTermsOfService'.tr(), style: linkStyle),
         ),
-        Text(AppConstants.registerAnd, style: style),
+        Text('registerAnd'.tr(), style: style),
         GestureDetector(
           onTap: onPrivacyPolicy,
-          child: Text(AppConstants.registerPrivacyPolicy, style: linkStyle),
+          child: Text('registerPrivacyPolicy'.tr(), style: linkStyle),
         ),
-        Text(AppConstants.registerTermsSuffix, style: style),
+        Text('registerTermsSuffix'.tr(), style: style),
       ],
     );
   }

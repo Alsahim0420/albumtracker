@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -45,7 +46,7 @@ class _SplashPageState extends State<SplashPage> {
             const SplashAppIcon(),
             const SizedBox(height: 24),
             Text(
-              AppConstants.appName,
+              'appName'.tr(),
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 20),

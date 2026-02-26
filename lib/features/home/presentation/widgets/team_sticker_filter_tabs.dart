@@ -1,6 +1,8 @@
+// ignore_for_file: unused_local_variable
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 
 enum TeamStickerFilter { all, missing, duplicates }
 
@@ -26,7 +28,7 @@ class TeamStickerFilterTabs extends StatelessWidget {
         children: [
           Expanded(
             child: _Chip(
-              label: AppConstants.teamDetailAllStickers,
+              label: 'teamDetailAllStickers'.tr(),
               isSelected: selected == TeamStickerFilter.all,
               onTap: () => onChanged?.call(TeamStickerFilter.all),
             ),
@@ -34,7 +36,7 @@ class TeamStickerFilterTabs extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _Chip(
-              label: AppConstants.teamDetailMissingTab,
+              label: 'homeFilterMissing'.tr(),
               isSelected: selected == TeamStickerFilter.missing,
               onTap: () => onChanged?.call(TeamStickerFilter.missing),
             ),
@@ -42,7 +44,7 @@ class TeamStickerFilterTabs extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _Chip(
-              label: '${colors.onSurface} ($duplicateCount)',
+              label: 'teamDetailDuplicates'.tr(args: [duplicateCount.toString()]),
               isSelected: selected == TeamStickerFilter.duplicates,
               onTap: () => onChanged?.call(TeamStickerFilter.duplicates),
             ),

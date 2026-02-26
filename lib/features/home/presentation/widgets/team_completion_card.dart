@@ -1,6 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 
 /// Card de estado de completado: barra de progreso y TOTAL / FOUND / MISSING.
 class TeamCompletionCard extends StatelessWidget {
@@ -31,7 +31,7 @@ class TeamCompletionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            AppConstants.teamDetailCompletionStatus,
+            'teamDetailCompletionStatus'.tr(),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
@@ -62,19 +62,19 @@ class TeamCompletionCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _StatChip(label: AppConstants.teamDetailTotal, value: '$total'),
+              _StatChip(label: 'teamDetailTotal'.tr(), value: '$total'),
               Container(
                 width: 1,
                 height: 20,
                 color: colors.onSurfaceVariant,
               ),
-              _StatChip(label: AppConstants.teamDetailFound, value: '$found'),
+              _StatChip(label: 'teamDetailFound'.tr(), value: '$found'),
               Container(
                 width: 1,
                 height: 20,
                 color: colors.outlineVariant,
               ),
-              _StatChip(label: AppConstants.teamDetailMissing, value: '$missing'),
+              _StatChip(label: 'homeFilterMissing'.tr(), value: '$missing'),
             ],
           ),
         ],
