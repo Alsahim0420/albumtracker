@@ -1,5 +1,5 @@
 {
-    "appName": "Album Tracker",
+    "appName": "Album Collect 2026",
     "version": "v1.0.2",
     "edition": "COPA DEL MUNDO EDICIÓN 2026",
     "tagline": "Hecho para coleccionistas",
@@ -167,7 +167,7 @@
     "team": "Equipo",
     "teamNotFound": "Equipo no encontrado",
     "homeTabTeams": "Equipos",
-    "Team Badge": "Bandera del equipo",
+    "Team Badge": "Escudo del equipo",
     "Team Photo": "Foto del equipo",
     "Player 1": "Jugador 1",
     "Player 2": "Jugador 2",
