@@ -18,7 +18,7 @@ class GlobalAlbumStats {
   final int collectedStickers;
   final int missingStickers;
   final int duplicateStickers;
-  final double globalPercentage;
+    final double globalPercentage;
 }
 
 /// Progreso de un equipo (para UI).
@@ -130,7 +130,7 @@ class AlbumRepository {
           name: t.name,
           collected: p.collected,
           total: p.total,
-          flagCode: t.flagAssetPath.isNotEmpty ? t.flagAssetPath : null,
+          flagCode: t.flagAssetPath?.isNotEmpty ?? false ? t.flagAssetPath : null,
         );
       }).toList();
       return GroupWithTeams(name: g.name, teams: teams);
@@ -140,6 +140,11 @@ class AlbumRepository {
   static TeamModel? getTeamById(String teamId) => WorldCup2026Seed.getTeamById(teamId);
 
   static int getStickerCount(String stickerId) => _collection[stickerId] ?? 0;
+
+  /// Añade pegatinas por números globales (bulk).
+  static Future<void> addStickersBulk(Iterable<int> globalNumbers) async {
+    await addStickersByGlobalNumbers(globalNumbers);
+  }
 
   static Future<void> updateStickerCount(String stickerId, int count) async {
     await hive.setStickerCount(stickerId, count);

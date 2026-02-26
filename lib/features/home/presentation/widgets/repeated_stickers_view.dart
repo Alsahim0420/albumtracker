@@ -21,6 +21,7 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ValueListenableBuilder<Box>(
       valueListenable: collectionBox.listenable(),
       builder: (context, box, _) {
@@ -49,14 +50,14 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: colors.onSurface,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'homeFilterSwaps'.tr(args: [totalDuplicates.toString()]),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: colors.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                   ),
@@ -125,6 +126,7 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -134,13 +136,13 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
             Icon(
               Icons.collections_bookmark_outlined,
               size: 64,
-              color: AppColors.placeholder.withValues(alpha: 0.6),
+              color: colors.onSurfaceVariant.withValues(alpha: 0.6),
             ),
             const SizedBox(height: 20),
             Text(
               'noRepeatedStickers'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: colors.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
               textAlign: TextAlign.center,
@@ -210,6 +212,7 @@ class _CountryFilterTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Material(
@@ -220,9 +223,9 @@ class _CountryFilterTrigger extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.cardBackground,
+              color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.inputBorder.withValues(alpha: 0.6)),
+              border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -236,14 +239,14 @@ class _CountryFilterTrigger extends StatelessWidget {
                 Icon(
                   Icons.filter_list_rounded,
                   size: 22,
-                  color: AppColors.textSecondary,
+                  color: colors.onSurfaceVariant,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _label,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: colors.onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                   ),
@@ -251,7 +254,7 @@ class _CountryFilterTrigger extends StatelessWidget {
                 Icon(
                   Icons.keyboard_arrow_down_rounded,
                   size: 24,
-                  color: AppColors.textSecondary,
+                  color: colors.onSurfaceVariant,
                 ),
               ],
             ),
@@ -276,10 +279,11 @@ class _FilterSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxSheetHeight = MediaQuery.sizeOf(context).height * 0.6;
+    final colors = Theme.of(context).colorScheme;
     return Container(
       constraints: BoxConstraints(maxHeight: maxSheetHeight),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.primaryContainer,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
@@ -299,7 +303,7 @@ class _FilterSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.placeholder.withValues(alpha: 0.5),
+                color: colors.onSurfaceVariant.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -308,7 +312,7 @@ class _FilterSheet extends StatelessWidget {
               child: Text(
                 'filterByCountry'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: colors.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -355,6 +359,7 @@ class _FilterListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -367,14 +372,14 @@ class _FilterListTile extends StatelessWidget {
               Icon(
                 isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
                 size: 22,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                color: isSelected ? colors.primary : colors.onSurfaceVariant,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                        color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       ),
                 ),
@@ -410,13 +415,14 @@ class _RepeatedStickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: colors.primaryContainer,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.inputBorder.withValues(alpha: 0.6)),
+          border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),
@@ -436,7 +442,7 @@ class _RepeatedStickerCard extends StatelessWidget {
                   Text(
                     'stickerId'.tr(args: [stickerId]),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: colors.onSurface,
                           fontSize: 10,
                           fontFamily: 'monospace',
                         ),
@@ -447,7 +453,7 @@ class _RepeatedStickerCard extends StatelessWidget {
                   Text(
                     _stickerSubtitleFromId(stickerId),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: colors.onSurfaceVariant,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
@@ -462,11 +468,11 @@ class _RepeatedStickerCard extends StatelessWidget {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.swapGreen,
+                  color: colors.primary,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.swapGreenDark.withValues(alpha: 0.5),
+                      color: colors.primary.withValues(alpha: 0.5),
                       blurRadius: 4,
                       offset: const Offset(0, 1),
                     ),
@@ -475,8 +481,8 @@ class _RepeatedStickerCard extends StatelessWidget {
                 child: Center(
                   child: Text(
                     '$_duplicateCount',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.onPrimary,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
@@ -509,10 +515,11 @@ class _CountSheet extends StatelessWidget {
       builder: (context, box, _) {
         final count = collectedStickersMap[stickerId] ?? 0;
         final duplicateCount = count > 1 ? count - 1 : 0;
+        final colors = Theme.of(context).colorScheme;
         return Container(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
           decoration: BoxDecoration(
-            color: AppColors.cardBackground,
+            color: colors.primaryContainer,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(
@@ -531,7 +538,7 @@ class _CountSheet extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.placeholder.withValues(alpha: 0.5),
+                    color: colors.onSurfaceVariant.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -540,14 +547,14 @@ class _CountSheet extends StatelessWidget {
               Text(
                 'stickerId'.tr(args: [stickerId]),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: colors.onSurface,
                       fontWeight: FontWeight.w600,
                     ),
               ),
               Text(
                 _stickerSubtitleFromId(stickerId),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: colors.onSurfaceVariant,
                     ),
               ),
               const SizedBox(height: 24),
@@ -569,7 +576,7 @@ class _CountSheet extends StatelessWidget {
                       '$duplicateCount',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: colors.onSurface,
                           ),
                     ),
                   ),
@@ -597,6 +604,7 @@ class _SheetButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -606,14 +614,14 @@ class _SheetButton extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: onPressed != null
-                ? AppColors.primary.withValues(alpha: 0.2)
-                : AppColors.inputBorder.withValues(alpha: 0.3),
+                ? colors.primary.withValues(alpha: 0.2)
+                : colors.outlineVariant.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
             size: 28,
-            color: onPressed != null ? AppColors.primary : AppColors.placeholder,
+            color: onPressed != null ? colors.primary : colors.onSurfaceVariant,
           ),
         ),
       ),

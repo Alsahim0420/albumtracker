@@ -1,8 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/theme/app_colors.dart';
-
 /// Encabezado de sección del álbum (ej. FWC • INTRO, FRA • FRANCE).
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
@@ -17,6 +15,7 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
       child: Row(
@@ -26,7 +25,7 @@ class SectionHeader extends StatelessWidget {
                 width: 4,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: colors.primary,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

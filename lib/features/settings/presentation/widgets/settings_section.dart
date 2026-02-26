@@ -43,8 +43,9 @@ class SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Material(
-      color: AppColors.cardBackground,
+      color: colors.primaryContainer,
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -52,18 +53,18 @@ class SettingsTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: AppColors.inputBorder, width: 1),
+              bottom: BorderSide(color: colors.onPrimaryContainer, width: 1),
             ),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: AppColors.textSecondary),
+              Icon(icon, size: 22, color: colors.onSurfaceVariant),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   title.tr(),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textPrimary,
+                        color: colors.onSurface,
                       ),
                 ),
               ),
@@ -71,7 +72,7 @@ class SettingsTile extends StatelessWidget {
                 trailing!,
                 const SizedBox(width: 8),
               ],
-              const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 22),
+              Icon(Icons.chevron_right, color: colors.onSurfaceVariant, size: 22),
             ],
           ),
         ),

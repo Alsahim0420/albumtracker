@@ -25,12 +25,13 @@ class SettingsProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final percent = total > 0 ? (collected / total).clamp(0.0, 1.0) : 0.0;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.inputBorder),
       ),
@@ -43,12 +44,12 @@ class SettingsProfileCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: avatarColor ?? AppColors.profileAvatarBg,
+                  color: avatarColor ?? colors.primaryContainer,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person,
-                  color: AppColors.textPrimary,
+                  color: colors.onSurface,
                   size: 32,
                 ),
               ),
@@ -59,9 +60,9 @@ class SettingsProfileCard extends StatelessWidget {
                   width: 14,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: AppColors.profileStatusDot,
+                    color: colors.onSurfaceVariant,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.splashBackground, width: 2),
+                    border: Border.all(color: colors.surface, width: 2),
                   ),
                 ),
               ),
@@ -74,7 +75,7 @@ class SettingsProfileCard extends StatelessWidget {
               children: [
                 Text(
                   userName,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colors.onSurface),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -86,8 +87,8 @@ class SettingsProfileCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: percent,
-                    backgroundColor: AppColors.progressTrack,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    backgroundColor: colors.primary.withValues(alpha: 0.5),
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.onSurface),
                     minHeight: 6,
                   ),
                 ),
@@ -102,7 +103,7 @@ class SettingsProfileCard extends StatelessWidget {
           if (onEdit != null)
             IconButton(
               onPressed: onEdit,
-              icon: const Icon(Icons.edit_outlined, color: AppColors.textSecondary, size: 22),
+              icon: Icon(Icons.edit_outlined, color: colors.onSurfaceVariant, size: 22),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
             ),

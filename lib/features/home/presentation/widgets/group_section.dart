@@ -18,6 +18,7 @@ class GroupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -41,9 +42,9 @@ class GroupSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.cardBackground,
+              color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.inputBorder),
+              border: Border.all(color: colors.outlineVariant),
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(

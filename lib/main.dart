@@ -2,12 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/injection.dart';
 import 'core/storage/hive_storage.dart';
-import 'core/theme/app_theme.dart';
 import 'features/home/presentation/bloc/album_bloc.dart';
 import 'features/home/presentation/pages/home_page.dart';
-import 'features/personalization/presentation/pages/personalization_page.dart';
-import 'features/splash/presentation/pages/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,8 +22,8 @@ void main() async {
   ));
 }
 
-class AlbumTrackerApp extends StatelessWidget {
-  const AlbumTrackerApp({super.key});
+class AlbumTrackerApp extends StatefulWidget {
+  const AlbumTrackerApp({super.key,});
 
   @override
   Widget build(BuildContext context) {
@@ -44,34 +42,42 @@ class AlbumTrackerApp extends StatelessWidget {
   }
 }
 
-/// Controla el flujo de entrada: splash → personalización (solo primera vez) o Home.
-class _AppEntry extends StatefulWidget {
-  const _AppEntry();
+class AlbumTrackerAppState extends State<AlbumTrackerApp> {
+  late ThemeData _theme;
 
   @override
-  State<_AppEntry> createState() => _AppEntryState();
-}
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
 
-class _AppEntryState extends State<_AppEntry> {
-  Widget? _postSplashScreen;
+  void _loadTheme() {
+    final team =
+        WorldCup2026Seed.getTeamById(storedFavoriteTeam ?? '');
+    _theme = TeamTheme.fromTeamId(storedFavoriteTeam);
+  }
 
-  void _onSplashComplete() {
-    if (hasCompletedOnboarding) {
-      setState(() => _postSplashScreen = const HomePage());
-    } else {
-      setState(() => _postSplashScreen = PersonalizationPage(
-            onComplete: () {
-              setState(() => _postSplashScreen = const HomePage());
-            },
-          ));
-    }
+  void updateTheme(String? teamId) {
+    setState(() {
+      _theme = TeamTheme.fromTeamId(teamId);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_postSplashScreen != null) {
-      return _postSplashScreen!;
-    }
-    return SplashPage(onComplete: _onSplashComplete);
+    return BlocProvider<AlbumBloc>(
+      create: (_) => sl<AlbumBloc>(),
+      child: MaterialApp(
+        title: 'Album Tracker',
+        theme: _theme,
+        debugShowCheckedModeBanner: false,
+        home: HomePage(
+          onThemeChanged: updateTheme,
+        ),
+      ),
+    );
   }
 }
+
+/// Controla el flujo de entrada: splash → personalización (solo primera vez) o Home.
+

@@ -28,10 +28,11 @@ class StickerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final backgroundColor = _backgroundColor;
     final textColor = state == StickerState.missing
-        ? AppColors.textSecondary
-        : AppColors.textPrimary;
+        ? colors.onSurfaceVariant
+        : colors.onSurface;
 
     return GestureDetector(
       onTap: onTap,
@@ -40,7 +41,7 @@ class StickerItem extends StatelessWidget {
           color: backgroundColor,
           borderRadius: BorderRadius.circular(10),
           border: state == StickerState.missing
-              ? Border.all(color: AppColors.inputBorder, width: 1)
+              ? Border.all(color: colors.outlineVariant, width: 1)
               : null,
         ),
         child: Stack(
@@ -60,13 +61,13 @@ class StickerItem extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.swapGreenDark,
+                    color: colors.primaryContainer,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     '+$swapCount',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.onSurface,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                     ),

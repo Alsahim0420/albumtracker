@@ -60,7 +60,65 @@ void _showLanguagePicker(BuildContext context) {
 
 /// Contenido de la pestaña Settings (sin Scaffold; se usa dentro de Home).
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+  final Function(String?) onThemeChanged;
+
+  const SettingsPage({
+    super.key,
+    required this.onThemeChanged,
+  });
+
+  void _openTeamSelector(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) {
+      final colors = Theme.of(context).colorScheme;
+      final teams = WorldCup2026Seed.groups
+          .expand((g) => g.teams)
+          .toList();
+      return ListView(
+        children: teams.map((team) {
+          return ListTile(
+            title: Text(team.name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
+            leading: team.flagAssetPath != null &&
+            team.flagAssetPath!.isNotEmpty
+            ? ClipOval(
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: FlagPlaceholder(code: team.flagAssetPath!),
+                ),
+              )
+            : CircleAvatar(
+                backgroundColor: team.primaryColor,
+                child: Text(
+                  team.name.substring(0, 1),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            onTap: () async {
+              await saveUserProfile(
+                name: storedUserName ?? '',
+                favoriteTeam: team.id,
+              );
+
+              if (!context.mounted) return;
+
+              // Actualiza tema
+              onThemeChanged(team.id);
+              if (context.mounted) Navigator.pop(context);
+            },
+        );
+      }).toList(),
+    );
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +136,7 @@ class SettingsPage extends StatelessWidget {
     return ValueListenableBuilder(
       valueListenable: collectionBox.listenable(),
       builder: (context, __, ___) {
+        final colors = Theme.of(context).colorScheme;
         final s = AlbumRepository.getGlobalStats();
         return SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 88),
@@ -144,6 +203,8 @@ class SettingsPage extends StatelessWidget {
                 title: 'settingsHelpFaq',
                 onTap: () {},
               ),
+              SettingsTile(icon: Icons.favorite_outline, title: 'Equipo favorito', onTap: () => _openTeamSelector(context)),
+              
             ],
           ),
         );

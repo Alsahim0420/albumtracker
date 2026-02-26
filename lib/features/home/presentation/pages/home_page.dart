@@ -9,7 +9,6 @@ import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/settings/presentation/pages/settings_page.dart';
 import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
 import 'package:albumtracker/features/home/presentation/widgets/bulk_add_stickers_sheet.dart';
@@ -24,7 +23,12 @@ import 'package:albumtracker/features/home/presentation/pages/team_detail_page.d
 
 /// Pantalla principal: World Cup 2026, tabs, total collection y grupos con equipos.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final Function(String?) onThemeChanged;
+
+  const HomePage({
+    super.key,
+    required this.onThemeChanged,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -37,7 +41,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: _buildBody(),
       ),
@@ -59,7 +63,7 @@ class _HomePageState extends State<HomePage> {
       case HomeNavItem.missing:
         return const MissingStickersView();
       case HomeNavItem.settings:
-        return const SettingsPage();
+        return SettingsPage(onThemeChanged: widget.onThemeChanged);
     }
   }
 
@@ -135,10 +139,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openBulkAddSheet() {
+    final colors = Theme.of(context).colorScheme;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.surface,
       builder: (context) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,

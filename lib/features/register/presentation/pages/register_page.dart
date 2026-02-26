@@ -28,8 +28,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: colors.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -78,12 +79,13 @@ class _RegisterPageState extends State<RegisterPage> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       size: 22,
-                      color: AppColors.inputIcon,
+                      color: colors.onSurfaceVariant,
                     ),
                     onPressed: () {
                       setState(() => _obscurePassword = !_obscurePassword);
                     },
                   ),
+                  hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ),
               const SizedBox(height: 28),
@@ -109,7 +111,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   TextButton(
                     onPressed: widget.onLogIn,
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
+                      foregroundColor: colors.onSurface,
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -149,9 +151,10 @@ class _TermsFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final style = Theme.of(context).textTheme.bodySmall;
     final linkStyle = style?.copyWith(
-      color: AppColors.primary,
+      color: colors.onSurface,
       decoration: TextDecoration.underline,
     );
     return Wrap(

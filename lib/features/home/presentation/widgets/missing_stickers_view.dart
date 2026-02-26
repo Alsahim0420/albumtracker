@@ -7,7 +7,6 @@ import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Vista de pegatinas faltantes. Misma UI/UX que RepeatedStickersView.
 class MissingStickersView extends StatefulWidget {
@@ -22,6 +21,7 @@ class _MissingStickersViewState extends State<MissingStickersView> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ValueListenableBuilder<Box>(
       valueListenable: collectionBox.listenable(),
       builder: (context, box, _) {
@@ -46,14 +46,14 @@ class _MissingStickersViewState extends State<MissingStickersView> {
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: colors.onSurface,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'homeFilterMissing'.tr(args: [missingIds.length.toString()]),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: colors.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                   ),
@@ -120,6 +120,7 @@ class _MissingStickersViewState extends State<MissingStickersView> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -129,13 +130,13 @@ class _MissingStickersViewState extends State<MissingStickersView> {
             Icon(
               Icons.emoji_events_rounded,
               size: 64,
-              color: AppColors.primary.withValues(alpha: 0.8),
+              color: colors.primary.withValues(alpha: 0.8),
             ),
             const SizedBox(height: 20),
             Text(
               'fullAlbum'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: colors.onSurface,
                     fontWeight: FontWeight.w700,
                   ),
               textAlign: TextAlign.center,
@@ -144,7 +145,7 @@ class _MissingStickersViewState extends State<MissingStickersView> {
             Text(
               'noMissingSticker'.tr(),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: colors.onSurfaceVariant,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -220,6 +221,7 @@ class _MissingCountryFilterTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Material(
@@ -230,9 +232,9 @@ class _MissingCountryFilterTrigger extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.cardBackground,
+              color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.inputBorder.withValues(alpha: 0.6)),
+              border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -243,18 +245,18 @@ class _MissingCountryFilterTrigger extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.filter_list_rounded, size: 22, color: AppColors.textSecondary),
+                Icon(Icons.filter_list_rounded, size: 22, color: colors.onSurfaceVariant),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _label,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textPrimary,
+                          color: colors.onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_down_rounded, size: 24, color: AppColors.textSecondary),
+                Icon(Icons.keyboard_arrow_down_rounded, size: 24, color: colors.onSurfaceVariant),
               ],
             ),
           ),
@@ -278,10 +280,11 @@ class _MissingFilterSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxSheetHeight = MediaQuery.sizeOf(context).height * 0.6;
+    final colors = Theme.of(context).colorScheme;
     return Container(
       constraints: BoxConstraints(maxHeight: maxSheetHeight),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.primaryContainer,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
@@ -301,7 +304,7 @@ class _MissingFilterSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.placeholder.withValues(alpha: 0.5),
+                color: colors.onSurfaceVariant.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -310,7 +313,7 @@ class _MissingFilterSheet extends StatelessWidget {
               child: Text(
                 'filterByCountry'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: colors.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -357,6 +360,7 @@ class _MissingFilterListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -369,14 +373,14 @@ class _MissingFilterListTile extends StatelessWidget {
               Icon(
                 isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
                 size: 22,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                color: isSelected ? colors.primary : colors.onSurfaceVariant,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                        color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       ),
                 ),
@@ -400,13 +404,14 @@ class _MissingStickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: colors.primaryContainer,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.inputBorder.withValues(alpha: 0.6)),
+          border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),
@@ -424,7 +429,7 @@ class _MissingStickerCard extends StatelessWidget {
               Text(
                 stickerId,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: colors.onSurface,
                       fontSize: 10,
                       fontFamily: 'monospace',
                     ),
@@ -435,7 +440,7 @@ class _MissingStickerCard extends StatelessWidget {
               Text(
                 _stickerSubtitleFromId(stickerId),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: colors.onSurfaceVariant,
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -461,10 +466,11 @@ class _AddOneSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.primaryContainer,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
@@ -483,7 +489,7 @@ class _AddOneSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.placeholder.withValues(alpha: 0.5),
+                color: colors.onSurfaceVariant.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -492,14 +498,14 @@ class _AddOneSheet extends StatelessWidget {
           Text(
             stickerId,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: colors.onSurface,
                   fontWeight: FontWeight.w600,
                 ),
           ),
           Text(
             _stickerSubtitleFromId(stickerId),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: colors.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 24),
@@ -511,8 +517,8 @@ class _AddOneSheet extends StatelessWidget {
                 if (context.mounted) onAdded();
               },
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textPrimary,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onSurface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

@@ -64,13 +64,14 @@ class _Segment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : AppColors.cardBackground,
+            color: isSelected ? colors.primary : colors.primaryContainer,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(isFirst ? 10 : 0),
               bottomLeft: Radius.circular(isFirst ? 10 : 0),
@@ -78,7 +79,7 @@ class _Segment extends StatelessWidget {
               bottomRight: Radius.circular(isLast ? 10 : 0),
             ),
             border: Border.all(
-              color: AppColors.inputBorder,
+              color: colors.outlineVariant,
               width: 1,
             ),
           ),
@@ -86,7 +87,7 @@ class _Segment extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                  color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
                   fontSize: 14,
                 ),
           ),

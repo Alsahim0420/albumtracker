@@ -18,6 +18,7 @@ class HomeTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       child: Row(
@@ -52,6 +53,7 @@ class _TabLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -61,7 +63,7 @@ class _TabLabel extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                  color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   fontSize: 14,
                 ),
@@ -71,7 +73,7 @@ class _TabLabel extends StatelessWidget {
             height: 3,
             width: isSelected ? 24 : 0,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: colors.onSurface,
               borderRadius: BorderRadius.circular(2),
             ),
           ),

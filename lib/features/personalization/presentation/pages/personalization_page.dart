@@ -4,7 +4,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/storage/hive_storage.dart';
-import '../../../../core/theme/app_colors.dart';
 
 /// Pantalla de personalización (onboarding). Solo se muestra en el primer arranque.
 /// Nombre obligatorio; equipo favorito y color de perfil opcionales.
@@ -78,8 +77,9 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: colors.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -129,7 +129,7 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                   decoration: InputDecoration(
                     hintText: 'personalizationFavoriteTeamHint'.tr(),
                   ),
-                  dropdownColor: AppColors.inputBackground,
+                  dropdownColor: colors.surfaceContainerHighest,
                   items: _teamOptions.map((t) {
                     return DropdownMenuItem<String>(
                       value: t,
@@ -164,8 +164,8 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.textPrimary
-                                  : Colors.transparent,
+                                  ? colors.onSurface
+                                  : colors.outlineVariant,
                               width: 3,
                             ),
                             boxShadow: [
@@ -185,12 +185,12 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                 ElevatedButton(
                   onPressed: _isSaving ? null : _onContinue,
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 22,
                           width: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.textPrimary,
+                            color: colors.onSurface,
                           ),
                         )
                       : Text('personalizationContinue'.tr()),

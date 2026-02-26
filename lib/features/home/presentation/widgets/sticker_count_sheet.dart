@@ -40,9 +40,10 @@ class _StickerCountSheetState extends State<StickerCountSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.splashBackground,
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
@@ -57,7 +58,7 @@ class _StickerCountSheetState extends State<StickerCountSheet> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: AppColors.textPrimary, size: 24),
+                    icon: Icon(Icons.close, color: colors.onSurface, size: 24),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                   ),
@@ -121,6 +122,7 @@ class _StickerPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
@@ -129,14 +131,14 @@ class _StickerPreviewCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary.withValues(alpha: 0.9),
-            AppColors.primary.withValues(alpha: 0.7),
+            colors.primary.withValues(alpha: 0.9),
+            colors.primary.withValues(alpha: 0.7),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: colors.primary.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -147,7 +149,7 @@ class _StickerPreviewCard extends StatelessWidget {
           Positioned(
             right: 16,
             bottom: 16,
-            child: Icon(Icons.star, color: AppColors.textPrimary.withValues(alpha: 0.4), size: 48),
+            child: Icon(Icons.star, color: colors.onSurface.withValues(alpha: 0.4), size: 48),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +157,7 @@ class _StickerPreviewCard extends StatelessWidget {
               Text(
                 'stickerId'.tr(args: [code]),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: colors.onSurface,
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                     ),
@@ -164,7 +166,7 @@ class _StickerPreviewCard extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textPrimary.withValues(alpha: 0.95),
+                      color: colors.onSurface.withValues(alpha: 0.95),
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -190,8 +192,9 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Material(
-      color: enabled ? AppColors.primary : AppColors.cardBackground,
+      color: enabled ? colors.primary : colors.primaryContainer,
       borderRadius: BorderRadius.circular(28),
       child: InkWell(
         onTap: enabled ? onTap : null,
@@ -202,7 +205,7 @@ class _CircleButton extends StatelessWidget {
           alignment: Alignment.center,
           child: Icon(
             icon,
-            color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+            color: enabled ? colors.onSurface : colors.onSurfaceVariant,
             size: 28,
           ),
         ),

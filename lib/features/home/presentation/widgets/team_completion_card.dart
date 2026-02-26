@@ -19,13 +19,14 @@ class TeamCompletionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percent = total > 0 ? (found / total).clamp(0.0, 1.0) : 0.0;
+    final colors = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.primaryContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.inputBorder),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,7 +34,7 @@ class TeamCompletionCard extends StatelessWidget {
           Text(
             'teamDetailCompletionStatus'.tr(),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.placeholder,
+                  color: colors.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
@@ -46,8 +47,8 @@ class TeamCompletionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: percent,
-                    backgroundColor: AppColors.progressTrack,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    backgroundColor: colors.primary.withValues(alpha: 0.5),
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.onSurface),
                     minHeight: 8,
                   ),
                 ),
@@ -66,13 +67,13 @@ class TeamCompletionCard extends StatelessWidget {
               Container(
                 width: 1,
                 height: 20,
-                color: AppColors.inputBorder,
+                color: colors.onSurfaceVariant,
               ),
               _StatChip(label: 'teamDetailFound'.tr(), value: '$found'),
               Container(
                 width: 1,
                 height: 20,
-                color: AppColors.inputBorder,
+                color: colors.outlineVariant,
               ),
               _StatChip(label: 'homeFilterMissing'.tr(), value: '$missing'),
             ],
@@ -91,20 +92,23 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Expanded(
       child: Column(
         children: [
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.placeholder,
+                  color: colors.onSurfaceVariant,
                   fontSize: 11,
                 ),
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
           ),
         ],
       ),
