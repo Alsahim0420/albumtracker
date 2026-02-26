@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/data/world_cup_2026_seed.dart';
 import '../../../../core/models/team_model.dart';
 import '../../../../core/storage/hive_storage.dart';
+import '../../../home/presentation/widgets/flag_placeholder.dart';
 
 /// Pantalla de personalización (onboarding). Solo se muestra en el primer arranque.
 /// Nombre obligatorio; país/equipo favorito opcional (cambia el color de la vista como en Settings).
@@ -130,11 +131,22 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                     ..._teams.map((team) {
                       return DropdownMenuItem<String>(
                         value: team.id,
-                        child: Text(
-                          team.name,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: colors.onSurface,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _TeamFlagCircle(team: team),
+                            const SizedBox(width: 12),
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: Text(
+                                team.name,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: colors.onSurface,
+                                    ),
+                                overflow: TextOverflow.ellipsis,
                               ),
+                            ),
+                          ],
                         ),
                       );
                     }),
@@ -159,6 +171,37 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bandera del equipo en círculo, igual que en Settings.
+class _TeamFlagCircle extends StatelessWidget {
+  const _TeamFlagCircle({required this.team});
+
+  final TeamModel team;
+
+  @override
+  Widget build(BuildContext context) {
+    if (team.flagAssetPath != null && team.flagAssetPath!.isNotEmpty) {
+      return ClipOval(
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: FlagPlaceholder(code: team.flagAssetPath!),
+        ),
+      );
+    }
+    return CircleAvatar(
+      radius: 16,
+      backgroundColor: team.primaryColor,
+      child: Text(
+        team.name.substring(0, 1),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
