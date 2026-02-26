@@ -8,7 +8,7 @@ class TeamMapper {
       id: model.id,
       name: model.name,
       groupId: model.groupId,
-      flagAssetPath: model.flagAssetPath,
+      flagAssetPath: model.flagAssetPath ?? '',
       stickers: model.stickers.map((sticker) => StickerMapper.toEntity(sticker)).toList(),
     );
   }
