@@ -4,10 +4,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/constants/app_constants.dart';
 import 'core/injection.dart';
 import 'core/storage/hive_storage.dart';
 import 'features/home/presentation/bloc/album_bloc.dart';
 import 'features/home/presentation/pages/home_page.dart';
+import 'features/personalization/presentation/pages/personalization_page.dart';
+import 'features/splash/presentation/pages/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,19 +60,52 @@ class AlbumTrackerAppState extends State<AlbumTrackerApp> {
     return BlocProvider<AlbumBloc>(
       create: (_) => sl<AlbumBloc>(),
       child: MaterialApp(
-        title: 'appName'.tr(),
+        title: AppConstants.appName,
         theme: _theme,
         localizationsDelegates: context.localizationDelegates,
         supportedLocales: context.supportedLocales,
         locale: context.locale,
         debugShowCheckedModeBanner: false,
-        home: HomePage(
-          onThemeChanged: updateTheme,
-        ),
+        home: _AppEntry(onThemeChanged: updateTheme),
       ),
     );
   }
 }
 
 /// Controla el flujo de entrada: splash → personalización (solo primera vez) o Home.
+class _AppEntry extends StatefulWidget {
+  const _AppEntry({required this.onThemeChanged});
+
+  final void Function(String? teamId) onThemeChanged;
+
+  @override
+  State<_AppEntry> createState() => _AppEntryState();
+}
+
+class _AppEntryState extends State<_AppEntry> {
+  bool _splashDone = false;
+
+  void _onSplashComplete() {
+    setState(() => _splashDone = true);
+  }
+
+  void _onPersonalizationComplete() {
+    widget.onThemeChanged(storedFavoriteTeam);
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_splashDone) {
+      return SplashPage(onComplete: _onSplashComplete);
+    }
+    if (!hasCompletedOnboarding) {
+      return PersonalizationPage(
+        onComplete: _onPersonalizationComplete,
+        onThemeChanged: widget.onThemeChanged,
+      );
+    }
+    return HomePage(onThemeChanged: widget.onThemeChanged);
+  }
+}
 
