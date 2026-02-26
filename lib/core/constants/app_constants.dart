@@ -2,7 +2,7 @@
 abstract final class AppConstants {
   AppConstants._();
 
-  static const String appName = 'Album Tracker';
+  static const String appName = 'Album Collect 2026';
   static const String version = 'v1.0.2';
   static const String edition = 'WORLD CUP 2026 EDITION';
   static const String tagline = 'Made for Collectors';

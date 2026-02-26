@@ -6,7 +6,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 class RepeatedStickersView extends StatefulWidget {
   const RepeatedStickersView({super.key});

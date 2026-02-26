@@ -68,7 +68,7 @@ class AlbumTrackerAppState extends State<AlbumTrackerApp> {
     return BlocProvider<AlbumBloc>(
       create: (_) => sl<AlbumBloc>(),
       child: MaterialApp(
-        title: 'Album Tracker',
+        title: 'Album Collect 2026',
         theme: _theme,
         debugShowCheckedModeBanner: false,
         home: HomePage(
