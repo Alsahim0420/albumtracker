@@ -3,18 +3,24 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/data/world_cup_2026_seed.dart';
+import '../../../../core/models/team_model.dart';
 import '../../../../core/storage/hive_storage.dart';
 
 /// Pantalla de personalización (onboarding). Solo se muestra en el primer arranque.
-/// Nombre obligatorio; equipo favorito y color de perfil opcionales.
+/// Nombre obligatorio; país/equipo favorito opcional (cambia el color de la vista como en Settings).
 class PersonalizationPage extends StatefulWidget {
   const PersonalizationPage({
     super.key,
     required this.onComplete,
+    this.onThemeChanged,
   });
 
   /// Se llama tras guardar el perfil y marcar onboarding como completado.
   final VoidCallback onComplete;
+
+  /// Se llama al elegir un país/equipo para actualizar el tema de la vista al instante.
+  final void Function(String? teamId)? onThemeChanged;
 
   @override
   State<PersonalizationPage> createState() => _PersonalizationPageState();
@@ -23,37 +29,21 @@ class PersonalizationPage extends StatefulWidget {
 class _PersonalizationPageState extends State<PersonalizationPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  String? _selectedTeam;
-  Color? _selectedColor;
+  String? _selectedTeamId;
   bool _isSaving = false;
 
-  static const List<String> _teamOptions = [
-    '',
-    'USA',
-    'Mexico',
-    'Canada',
-    'Argentina',
-    'Brazil',
-    'Costa Rica',
-    'England',
-    'France',
-    'Germany',
-    'Spain',
-  ];
-
-  static const List<Color> _colorOptions = [
-    Color(0xFF3B82F6), // primary blue
-    Color(0xFFE07C4A), // profile orange
-    Color(0xFF22C55E), // green
-    Color(0xFF8B5CF6), // purple
-    Color(0xFFEC4899), // pink
-    Color(0xFFF59E0B), // amber
-  ];
+  List<TeamModel> get _teams =>
+      WorldCup2026Seed.groups.expand((g) => g.teams).toList();
 
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  void _onTeamChanged(String? teamId) {
+    setState(() => _selectedTeamId = teamId);
+    widget.onThemeChanged?.call(teamId);
   }
 
   Future<void> _onContinue() async {
@@ -62,11 +52,8 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
     final name = _nameController.text.trim();
     await saveUserProfile(
       name: name,
-      favoriteTeam: _selectedTeam != null && _selectedTeam!.isNotEmpty
-          ? _selectedTeam
-          : null,
-      profileColorHex: _selectedColor != null
-          ? '#${_selectedColor!.value.toRadixString(16).padLeft(8, '0')}'
+      favoriteTeam: _selectedTeamId != null && _selectedTeamId!.isNotEmpty
+          ? _selectedTeamId
           : null,
     );
     await setOnboardingCompleted();
@@ -125,63 +112,34 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _selectedTeam ?? '',
+                  value: _selectedTeamId ?? '',
                   decoration: InputDecoration(
                     hintText: 'personalizationFavoriteTeamHint'.tr(),
                   ),
                   dropdownColor: colors.surfaceContainerHighest,
-                  items: _teamOptions.map((t) {
-                    return DropdownMenuItem<String>(
-                      value: t,
+                  items: [
+                    DropdownMenuItem<String>(
+                      value: '',
                       child: Text(
-                        t.isEmpty ? 'personalizationNone'.tr() : t.tr(),
+                        'personalizationNone'.tr(),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: colors.onSurface,
                             ),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (v) => setState(() => _selectedTeam = v),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'personalizationColorLabel'.tr(),
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: _colorOptions.map((c) {
-                    final isSelected = _selectedColor == c;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: GestureDetector(
-                        onTap: () =>
-                            setState(() => _selectedColor = isSelected ? null : c),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? colors.onSurface
-                                  : colors.outlineVariant,
-                              width: 3,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: c.withValues(alpha: 0.5),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
+                    ),
+                    ..._teams.map((team) {
+                      return DropdownMenuItem<String>(
+                        value: team.id,
+                        child: Text(
+                          team.name,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: colors.onSurface,
                               ),
-                            ],
-                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }),
+                  ],
+                  onChanged: _onTeamChanged,
                 ),
                 const SizedBox(height: 40),
                 ElevatedButton(
