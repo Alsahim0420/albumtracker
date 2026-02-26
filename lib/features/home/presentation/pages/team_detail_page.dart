@@ -1,9 +1,8 @@
 // ignore_for_file: unused_local_variable, unnecessary_underscores
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
-import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/models/team_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,8 +34,8 @@ class TeamDetailPage extends StatelessWidget {
     final team = AlbumRepository.getTeamById(teamId);
     if (team == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Team')),
-        body: const Center(child: Text('Team not found')),
+        appBar: AppBar(title: Text('team'.tr())),
+        body: Center(child: Text('teamNotFound'.tr())),
       );
     }
     return _TeamDetailBody(team: team, groupName: groupName);
@@ -138,8 +137,8 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: Text(
-              AppConstants.teamDetailBackGroups,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colors.onSurface),
+              'teamDetailBackGroups'.tr(),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             centerTitle: false,
             actions: [
@@ -177,7 +176,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    AppConstants.teamDetailSquadMembers,
+                    'teamDetailSquadMembers'.tr(),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
@@ -281,8 +280,8 @@ class _TeamHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  AppConstants.teamDetailGroupEvent.replaceFirst('%s', groupName),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                  'teamDetailGroupEvent'.tr(args: [groupName]),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),

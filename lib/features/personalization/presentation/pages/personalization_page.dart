@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/storage/hive_storage.dart';
 
 /// Pantalla de personalización (onboarding). Solo se muestra en el primer arranque.
@@ -90,52 +90,52 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
               children: [
                 const SizedBox(height: 32),
                 Text(
-                  AppConstants.personalizationTitle,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: colors.onSurface),
+                  'personalizationTitle'.tr(),
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  AppConstants.personalizationSubtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                  'personalizationSubtitle'.tr(),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  AppConstants.personalizationNameLabel,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface)    ,
+                  'personalizationNameLabel'.tr(),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    hintText: AppConstants.personalizationNameHint,
+                  decoration: InputDecoration(
+                    hintText: 'personalizationNameHint'.tr(),
                     suffixIcon: Icon(Icons.person_outline, size: 22),
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return 'Please enter your name';
+                      return 'personalizationNameError'.tr();
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  AppConstants.personalizationFavoriteTeamLabel,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
+                  'personalizationFavoriteTeamLabel'.tr(),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _selectedTeam ?? '',
-                  decoration: const InputDecoration(
-                    hintText: AppConstants.personalizationFavoriteTeamHint,
+                  decoration: InputDecoration(
+                    hintText: 'personalizationFavoriteTeamHint'.tr(),
                   ),
                   dropdownColor: colors.surfaceContainerHighest,
                   items: _teamOptions.map((t) {
                     return DropdownMenuItem<String>(
                       value: t,
                       child: Text(
-                        t.isEmpty ? '— None —' : t.toUpperCase(),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface),
+                        t.isEmpty ? 'personalizationNone'.tr() : t.tr(),
+                        style: const TextStyle(color: AppColors.textPrimary),
                       ),
                     );
                   }).toList(),
@@ -143,8 +143,8 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  AppConstants.personalizationColorLabel,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.onSurface),
+                  'personalizationColorLabel'.tr(),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -193,7 +193,7 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                             color: colors.onSurface,
                           ),
                         )
-                      : Text(AppConstants.personalizationContinue, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
+                      : Text('personalizationContinue'.tr()),
                 ),
                 const SizedBox(height: 24),
               ],

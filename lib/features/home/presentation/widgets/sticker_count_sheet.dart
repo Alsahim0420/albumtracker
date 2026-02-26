@@ -1,6 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 
 /// Bottom sheet para marcar cantidad de una pegatina (+ / - y Listo).
@@ -102,7 +103,7 @@ class _StickerCountSheetState extends State<StickerCountSheet> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text(AppConstants.stickerCountDone),
+                  child: Text('stickerCountDone'.tr()),
                 ),
               ),
             ],
@@ -154,7 +155,7 @@ class _StickerPreviewCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                code,
+                'stickerId'.tr(args: [code]),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: colors.onSurface,
                       fontSize: 28,

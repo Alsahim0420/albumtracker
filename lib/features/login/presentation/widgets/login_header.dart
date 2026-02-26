@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Cabecera del login: icono de app y textos de bienvenida.
 class LoginHeader extends StatelessWidget {
@@ -26,12 +26,12 @@ class LoginHeader extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Text(
-          AppConstants.loginWelcomeTitle,
+          'loginWelcomeTitle'.tr(),
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: 8),
         Text(
-          AppConstants.loginSubtitle,
+          'loginSubtitle'.tr(),
           style: Theme.of(context).textTheme.bodyMedium,
           textAlign: TextAlign.center,
         ),

@@ -1,6 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Cabecera de Home: título, subtítulo y icono de perfil.
 class HomeHeader extends StatelessWidget {
@@ -24,7 +25,7 @@ class HomeHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppConstants.appName,
+                  'appName'.tr(),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontSize: 22,
                         color: colors.onSurface,
@@ -32,10 +33,8 @@ class HomeHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  AppConstants.homeSubtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
+                  'title'.tr(),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),

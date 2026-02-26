@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 /// Encabezado de sección del álbum (ej. FWC • INTRO, FRA • FRANCE).
@@ -30,10 +31,8 @@ class SectionHeader extends StatelessWidget {
               ),
           const SizedBox(width: 10),
           Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colors.onSurface,
-                ),
+            'title'.tr(),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
         ],
       ),

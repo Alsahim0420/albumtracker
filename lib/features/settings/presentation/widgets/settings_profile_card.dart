@@ -1,15 +1,15 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Card de perfil en Settings: avatar, nombre, nivel, barra de progreso.
 class SettingsProfileCard extends StatelessWidget {
   const SettingsProfileCard({
     super.key,
-    this.userName = 'Collector',
+    required this.userName,
     this.avatarColor,
-    this.collectorLevel = AppConstants.settingsCollectorLevel,
+    this.collectorLevel = 'settingsCollectorLevel',
     this.collected = 420,
     this.total = 650,
     this.onEdit,
@@ -79,8 +79,8 @@ class SettingsProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  collectorLevel,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                  'settingsCollectorLevel'.tr(),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(
@@ -94,8 +94,8 @@ class SettingsProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$collected/$total ${AppConstants.settingsStickersCollected}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                  '$collected/$total ${'settingsStickersCollected'.tr()}',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),

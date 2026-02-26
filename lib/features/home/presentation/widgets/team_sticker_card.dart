@@ -1,6 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 
 /// Card de una pegatina en la rejilla del equipo (encontrada o faltante).
@@ -37,19 +38,23 @@ class TeamStickerCard extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: MainAxisSize.max,
                 children: [
                   Text(
-                    sticker.code,
+                    'stickerId'.tr(args: [sticker.code]),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: isCollected
                               ? colors.onPrimary.withValues(alpha: 0.9)
                               : colors.onSurfaceVariant,
                           fontSize: 11,
                         ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  _buildCenterContent(context, isCollected),
+                  Expanded(
+                    child: _buildCenterContent(context, isCollected),
+                  ),
                 ],
               ),
             ),
@@ -109,16 +114,24 @@ class TeamStickerCard extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 20, color: colors.onSurfaceVariant),
           const SizedBox(height: 4),
-          Text(AppConstants.teamDetailTeamPhoto, style: textStyle),
           Text(
-            AppConstants.teamDetailNotFound,
+            'teamDetailTeamPhoto'.tr(),
+            style: textStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            'teamDetailNotFound'.tr(),
             style: textStyle?.copyWith(
               fontSize: 10,
               color: colors.onSurfaceVariant,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       );
@@ -133,7 +146,7 @@ class TeamStickerCard extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            sticker.name ?? sticker.label,
+            sticker.name?.tr() ?? sticker.label.tr(),
             style: textStyle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

@@ -1,10 +1,9 @@
-// ignore_for_file: unused_local_variable
-
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
-enum HomeTab { groups, teams, specials, marketplace }
+enum HomeTab { homeTabGroups, homeTabTeams, homeTabSpecials, homeTabMarketplace }
 
 /// Tabs horizontales: Groups, Teams, Specials, Marketplace.
 class HomeTabs extends StatelessWidget {
@@ -25,15 +24,15 @@ class HomeTabs extends StatelessWidget {
       child: Row(
         children: [
           _TabLabel(
-            label: AppConstants.homeTabGroups,
-            isSelected: selected == HomeTab.groups,
-            onTap: () => onChanged?.call(HomeTab.groups),
+            label: 'homeTabGroups'.tr(),
+            isSelected: selected == HomeTab.homeTabGroups,
+            onTap: () => onChanged?.call(HomeTab.homeTabGroups),
           ),
           const SizedBox(width: 20),
           _TabLabel(
-            label: AppConstants.homeTabSpecials,
-            isSelected: selected == HomeTab.specials,
-            onTap: () => onChanged?.call(HomeTab.specials),
+            label: 'homeTabSpecials'.tr(),
+            isSelected: selected == HomeTab.homeTabSpecials,
+            onTap: () => onChanged?.call(HomeTab.homeTabSpecials),
           ),
         ],
       ),

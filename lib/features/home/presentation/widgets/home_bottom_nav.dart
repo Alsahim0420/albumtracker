@@ -1,6 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Índice de la pestaña inferior.
 enum HomeNavItem { album, repeated, missing, settings }
@@ -48,25 +49,25 @@ class HomeBottomNav extends StatelessWidget {
                 children: [
                   _NavTile(
                     icon: Icons.grid_view_rounded,
-                    label: AppConstants.homeNavAlbum,
+                    label: 'homeNavAlbum'.tr(),
                     isSelected: currentIndex == HomeNavItem.album,
                     onTap: () => onTap?.call(HomeNavItem.album),
                   ),
                   _NavTile(
                     icon: Icons.copy_rounded,
-                    label: AppConstants.homeNavRepeated,
+                    label: 'homeNavRepeated'.tr(),
                     isSelected: currentIndex == HomeNavItem.repeated,
                     onTap: () => onTap?.call(HomeNavItem.repeated),
                   ),
                   _NavTile(
                     icon: Icons.playlist_add_rounded,
-                    label: AppConstants.homeNavMissing,
+                    label: 'homeFilterMissing'.tr(),
                     isSelected: currentIndex == HomeNavItem.missing,
                     onTap: () => onTap?.call(HomeNavItem.missing),
                   ),
                   _NavTile(
                     icon: Icons.settings_outlined,
-                    label: AppConstants.homeNavSettings,
+                    label: 'homeNavSettings'.tr(),
                     isSelected: currentIndex == HomeNavItem.settings,
                     onTap: () => onTap?.call(HomeNavItem.settings),
                   ),

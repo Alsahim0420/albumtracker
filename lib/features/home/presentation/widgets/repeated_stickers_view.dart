@@ -1,8 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
@@ -46,7 +46,7 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppConstants.homeFilterSwaps,
+                    'homeFilterSwaps'.tr(),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
@@ -55,7 +55,7 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Total repetidas: $totalDuplicates',
+                    'homeFilterSwaps'.tr(args: [totalDuplicates.toString()]),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: colors.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
@@ -140,7 +140,7 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
             ),
             const SizedBox(height: 20),
             Text(
-              'No tienes laminas repetidas',
+              'noRepeatedStickers'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: colors.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
@@ -193,7 +193,7 @@ class _CountryFilterTrigger extends StatelessWidget {
   final List<String> countries;
   final void Function(String?) onSelect;
 
-  String get _label => selected == null ? AppConstants.homeFilterAll : selected!;
+  String get _label => selected == null ? 'homeFilterAll'.tr() : selected!;
 
   void _openFilterSheet(BuildContext context) {
     showModalBottomSheet<void>(
@@ -310,7 +310,7 @@ class _FilterSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Text(
-                'Filtrar por país',
+                'filterByCountry'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
@@ -324,7 +324,7 @@ class _FilterSheet extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _FilterListTile(
-                      label: AppConstants.homeFilterAll,
+                      label: 'homeFilterAll'.tr(),
                       isSelected: selected == null,
                       onTap: () => onSelect(null),
                     ),
@@ -394,10 +394,10 @@ class _FilterListTile extends StatelessWidget {
 
 /// Subtitle derived from stickerId: B=Badge, P=Photo, PL=Player.
 String _stickerSubtitleFromId(String stickerId) {
-  if (stickerId.contains('-PL-')) return 'Player';
-  if (stickerId.contains('-B-')) return 'Badge';
-  if (stickerId.contains('-P-')) return 'Photo';
-  return 'Sticker';
+  if (stickerId.contains('-PL-')) return 'player'.tr();
+  if (stickerId.contains('-B-')) return 'badge'.tr();
+  if (stickerId.contains('-P-')) return 'photo'.tr();
+  return 'sticker'.tr();
 }
 
 class _RepeatedStickerCard extends StatelessWidget {
@@ -440,7 +440,7 @@ class _RepeatedStickerCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    stickerId,
+                    'stickerId'.tr(args: [stickerId]),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.onSurface,
                           fontSize: 10,
@@ -545,7 +545,7 @@ class _CountSheet extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                stickerId,
+                'stickerId'.tr(args: [stickerId]),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: colors.onSurface,
                       fontWeight: FontWeight.w600,

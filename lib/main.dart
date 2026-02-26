@@ -1,7 +1,4 @@
-// ignore_for_file: unused_local_variable
-
-import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
-import 'package:albumtracker/core/theme/team_theme.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,15 +10,36 @@ import 'features/home/presentation/pages/home_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initHive();
-  await init();
-  runApp(const AlbumTrackerApp());
+  await EasyLocalization.ensureInitialized();
+  runApp(EasyLocalization(
+    supportedLocales: const [
+      Locale('en'),
+      Locale('es'),
+    ],
+    path: 'assets/lang',
+    fallbackLocale: const Locale('en'),
+    child: const AlbumTrackerApp(),
+  ));
 }
 
 class AlbumTrackerApp extends StatefulWidget {
   const AlbumTrackerApp({super.key,});
 
   @override
-  State<AlbumTrackerApp> createState() => AlbumTrackerAppState();
+  Widget build(BuildContext context) {
+    return BlocProvider<AlbumBloc>(
+      create: (_) => AlbumBloc(),
+      child: MaterialApp(
+        title: 'appName'.tr(),
+        theme: AppTheme.dark,
+        localizationsDelegates: context.localizationDelegates,
+        debugShowCheckedModeBanner: false,
+        supportedLocales: context.supportedLocales,
+        locale: context.locale,
+        home: const _AppEntry(),
+      ),
+    );
+  }
 }
 
 class AlbumTrackerAppState extends State<AlbumTrackerApp> {

@@ -1,6 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Card de progreso: porcentaje, barra, contador y swaps disponibles.
 class ProgressCard extends StatelessWidget {
@@ -46,10 +47,8 @@ class ProgressCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    AppConstants.homeCompleted,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
+                    'homeCompleted'.tr(),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -84,7 +83,7 @@ class ProgressCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$swapsAvailable ${AppConstants.homeSwapsAvailable}',
+                    '$swapsAvailable ${'homeSwapsAvailable'.tr()}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.primaryContainer,
                           fontWeight: FontWeight.w600,

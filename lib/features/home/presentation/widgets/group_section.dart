@@ -1,6 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
 import 'team_row.dart';
 
@@ -27,16 +28,12 @@ class GroupSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                group.name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colors.onSurface,
-                    ),
+                'groupWithLetter'.tr(args: [group.name.contains(' ') ? group.name.split(' ').last : group.name]),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
               Text(
-                '${group.percentComplete}% ${AppConstants.homeComplete}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
+                '${group.percentComplete}% ${'homeComplete'.tr()}',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),
