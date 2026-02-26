@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Bottom sheet para agregar múltiples pegatinas por números (comas o espacios).
@@ -98,12 +98,12 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppConstants.bulkAddTitle,
+                          'bulkAddTitle'.tr(),
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 22),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          AppConstants.bulkAddSubtitle,
+                          'bulkAddSubtitle'.tr(),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
@@ -135,7 +135,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        AppConstants.bulkAddInfoText,
+                        'bulkAddInfoText'.tr(),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppColors.textSecondary,
                               height: 1.35,
@@ -159,7 +159,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                     minLines: 4,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textPrimary),
                     decoration: InputDecoration(
-                      hintText: AppConstants.bulkAddPlaceholder,
+                      hintText: 'bulkAddPlaceholder'.tr(),
                       hintStyle: const TextStyle(color: AppColors.placeholder),
                       filled: true,
                       fillColor: AppColors.inputBackground,
@@ -178,7 +178,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                   Padding(
                     padding: const EdgeInsets.only(right: 12, bottom: 8),
                     child: Text(
-                      '${_parsedNumbers.length} ${AppConstants.bulkAddStickersFound}',
+                      '${_parsedNumbers.length} ${'bulkAddStickersFound'.tr()}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -191,7 +191,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  AppConstants.bulkAddExampleFormat,
+                  'bulkAddExampleFormat'.tr(),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.placeholder,
                         fontWeight: FontWeight.w600,
@@ -204,9 +204,9 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  _ExampleChip(label: AppConstants.bulkAddExample1),
+                  _ExampleChip(label: 'bulkAddExample1'.tr()),
                   const SizedBox(width: 10),
-                  _ExampleChip(label: AppConstants.bulkAddExample2),
+                  _ExampleChip(label: 'bulkAddExample2'.tr()),
                 ],
               ),
             ),
@@ -226,7 +226,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    AppConstants.bulkAddShortcuts,
+                    'bulkAddShortcuts'.tr(),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -246,7 +246,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text(AppConstants.bulkAddCancel),
+                      child: Text('bulkAddCancel'.tr()),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -260,7 +260,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(AppConstants.bulkAddConfirm),
+                          Text('bulkAddConfirm'.tr()),
                           const SizedBox(width: 6),
                           const Icon(Icons.check, size: 20),
                         ],

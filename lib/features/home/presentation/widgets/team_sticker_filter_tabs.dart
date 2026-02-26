@@ -1,6 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/theme/app_colors.dart';
 
 enum TeamStickerFilter { all, missing, duplicates }
@@ -26,7 +26,7 @@ class TeamStickerFilterTabs extends StatelessWidget {
         children: [
           Expanded(
             child: _Chip(
-              label: AppConstants.teamDetailAllStickers,
+              label: 'teamDetailAllStickers'.tr(),
               isSelected: selected == TeamStickerFilter.all,
               onTap: () => onChanged?.call(TeamStickerFilter.all),
             ),
@@ -34,7 +34,7 @@ class TeamStickerFilterTabs extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _Chip(
-              label: AppConstants.teamDetailMissingTab,
+              label: 'homeFilterMissing'.tr(),
               isSelected: selected == TeamStickerFilter.missing,
               onTap: () => onChanged?.call(TeamStickerFilter.missing),
             ),
@@ -42,7 +42,7 @@ class TeamStickerFilterTabs extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _Chip(
-              label: '${AppConstants.teamDetailDuplicates} ($duplicateCount)',
+              label: 'teamDetailDuplicates'.tr(args: [duplicateCount.toString()]),
               isSelected: selected == TeamStickerFilter.duplicates,
               onTap: () => onChanged?.call(TeamStickerFilter.duplicates),
             ),

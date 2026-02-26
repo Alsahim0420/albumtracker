@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Cabecera del registro: logo en rejilla, nombre de la app, título y descripción.
 class RegisterHeader extends StatelessWidget {
@@ -17,7 +17,7 @@ class RegisterHeader extends StatelessWidget {
             _LogoGrid(),
             const SizedBox(width: 12),
             Text(
-              AppConstants.registerAppBrand,
+              'registerAppBrand'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     letterSpacing: 0.5,
                   ),
@@ -26,12 +26,12 @@ class RegisterHeader extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         Text(
-          AppConstants.registerTitle,
+          'registerTitle'.tr(),
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: 8),
         Text(
-          AppConstants.registerSubtitle,
+          'registerSubtitle'.tr(),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],

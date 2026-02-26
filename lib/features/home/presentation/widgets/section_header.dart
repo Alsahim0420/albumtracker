@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/theme/app_colors.dart';
@@ -31,7 +32,7 @@ class SectionHeader extends StatelessWidget {
               ),
           const SizedBox(width: 10),
           Text(
-            title,
+            'title'.tr(),
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ],

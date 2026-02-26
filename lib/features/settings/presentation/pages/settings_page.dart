@@ -1,14 +1,62 @@
 // ignore_for_file: unnecessary_underscores, unused_import
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/repository/album_repository.dart';
-import '../../../../core/storage/hive_storage.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../widgets/settings_profile_card.dart';
-import '../widgets/settings_section.dart';
+import 'package:albumtracker/core/repository/album_repository.dart';
+import 'package:albumtracker/core/storage/hive_storage.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
+import 'package:albumtracker/features/settings/presentation/widgets/settings_profile_card.dart';
+import 'package:albumtracker/features/settings/presentation/widgets/settings_section.dart';
+
+void _showLanguagePicker(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'settingsLanguage'.tr(),
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              _LanguageOption(
+                label: 'languageEnglish'.tr(),
+                isSelected: ctx.locale.languageCode == 'en',
+                onTap: () {
+                  ctx.setLocale(const Locale('en'));
+                  Navigator.of(ctx).pop();
+                },
+              ),
+              const SizedBox(height: 8),
+              _LanguageOption(
+                label: 'languageSpanish'.tr(),
+                isSelected: ctx.locale.languageCode == 'es',
+                onTap: () {
+                  ctx.setLocale(const Locale('es'));
+                  Navigator.of(ctx).pop();
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
 
 /// Contenido de la pestaña Settings (sin Scaffold; se usa dentro de Home).
 class SettingsPage extends StatelessWidget {
@@ -16,7 +64,7 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userName = storedUserName ?? 'Collector';
+    final userName = storedUserName ?? 'defaultUserName'.tr();
     final colorHex = storedProfileColorHex;
     Color? avatarColor;
     if (colorHex != null && colorHex.isNotEmpty) {
@@ -39,7 +87,7 @@ class SettingsPage extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                 child: Text(
-                  AppConstants.settingsTitle,
+                  'settingsTitle'.tr(),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 28),
                 ),
               ),
@@ -50,47 +98,97 @@ class SettingsPage extends StatelessWidget {
                 total: s.totalStickers,
                 onEdit: () {},
               ),
-              SettingsSectionHeader(title: AppConstants.settingsAccount),
+              SettingsSectionHeader(title: 'settingsAccount'),
+              SettingsTile(
+                icon: Icons.language_rounded,
+                title: 'settingsLanguage',
+                trailing: Text(
+                  context.locale.languageCode == 'es' ? 'languageSpanish'.tr() : 'languageEnglish'.tr(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                onTap: () => _showLanguagePicker(context),
+              ),
               SettingsTile(
                 icon: Icons.person_outline,
-                title: AppConstants.settingsAccountSettings,
+                title: 'settingsAccountSettings',
                 onTap: () {},
               ),
               SettingsTile(
                 icon: Icons.notifications_outlined,
-                title: AppConstants.settingsNotifications,
+                title: 'settingsNotifications',
                 trailing: Text(
-                  AppConstants.settingsNotificationsOn,
+                  'settingsNotificationsOn'.tr(),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 onTap: () {},
               ),
               SettingsTile(
                 icon: Icons.shield_outlined,
-                title: AppConstants.settingsPrivacySecurity,
+                title: 'settingsPrivacySecurity',
                 onTap: () {},
               ),
-              SettingsSectionHeader(title: AppConstants.settingsCollectionData),
+              SettingsSectionHeader(title: 'settingsCollectionData'),
               SettingsTile(
                 icon: Icons.download_outlined,
-                title: AppConstants.settingsExportData,
+                title: 'settingsExportData',
                 onTap: () {},
               ),
-              SettingsSectionHeader(title: AppConstants.settingsSupport),
+              SettingsSectionHeader(title: 'settingsSupport'),
               SettingsTile(
                 icon: Icons.info_outline_rounded,
-                title: AppConstants.settingsAppInformation,
+                title: 'settingsAppInformation',
                 onTap: () {},
               ),
               SettingsTile(
                 icon: Icons.help_outline_rounded,
-                title: AppConstants.settingsHelpFaq,
+                title: 'settingsHelpFaq',
                 onTap: () {},
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _LanguageOption extends StatelessWidget {
+  const _LanguageOption({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.inputBackground,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                ),
+              ),
+              if (isSelected)
+                Icon(Icons.check_rounded, size: 22, color: AppColors.primary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

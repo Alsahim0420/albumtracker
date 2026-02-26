@@ -1,8 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
@@ -42,7 +42,7 @@ class _MissingStickersViewState extends State<MissingStickersView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppConstants.homeNavMissing,
+                    'homeFilterMissing'.tr(),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
@@ -51,7 +51,7 @@ class _MissingStickersViewState extends State<MissingStickersView> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Total faltantes: ${missingIds.length}',
+                    'homeFilterMissing'.tr(args: [missingIds.length.toString()]),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
@@ -133,7 +133,7 @@ class _MissingStickersViewState extends State<MissingStickersView> {
             ),
             const SizedBox(height: 20),
             Text(
-              '¡Álbum completo!',
+              'fullAlbum'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -142,7 +142,7 @@ class _MissingStickersViewState extends State<MissingStickersView> {
             ),
             const SizedBox(height: 8),
             Text(
-              'No te faltan láminas.',
+              'noMissingSticker'.tr(),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -184,10 +184,10 @@ class _MissingStickersViewState extends State<MissingStickersView> {
 }
 
 String _stickerSubtitleFromId(String stickerId) {
-  if (stickerId.contains('-PL-')) return 'Player';
-  if (stickerId.contains('-B-')) return 'Badge';
-  if (stickerId.contains('-P-')) return 'Photo';
-  return 'Sticker';
+  if (stickerId.contains('-PL-')) return 'player'.tr();
+  if (stickerId.contains('-B-')) return 'badge'.tr();
+  if (stickerId.contains('-P-')) return 'photo'.tr();
+  return 'sticker'.tr();
 }
 
 class _MissingCountryFilterTrigger extends StatelessWidget {
@@ -201,7 +201,7 @@ class _MissingCountryFilterTrigger extends StatelessWidget {
   final List<String> countries;
   final void Function(String?) onSelect;
 
-  String get _label => selected == null ? 'Todos' : selected!;
+  String get _label => selected == null ? 'homeFilterAll'.tr() : selected!;
 
   void _openFilterSheet(BuildContext context) {
     showModalBottomSheet<void>(
@@ -308,7 +308,7 @@ class _MissingFilterSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Text(
-                'Filtrar por país',
+                'filterByCountry'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
@@ -322,7 +322,7 @@ class _MissingFilterSheet extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _MissingFilterListTile(
-                      label: 'Todos',
+                      label: 'homeFilterAll'.tr(),
                       isSelected: selected == null,
                       onTap: () => onSelect(null),
                     ),
@@ -517,7 +517,7 @@ class _AddOneSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Agregar 1'),
+              child: Text('addOne'.tr()),
             ),
           ),
         ],

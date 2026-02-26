@@ -1,6 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Encabezado de sección en Settings (ACCOUNT, COLLECTION DATA, etc.).
 class SettingsSectionHeader extends StatelessWidget {
@@ -13,7 +14,7 @@ class SettingsSectionHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
       child: Text(
-        title,
+        title.tr(),
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: AppColors.placeholder,
               fontWeight: FontWeight.w600,
@@ -60,7 +61,7 @@ class SettingsTile extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  title,
+                  title.tr(),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.textPrimary,
                       ),

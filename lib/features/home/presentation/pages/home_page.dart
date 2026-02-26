@@ -1,10 +1,10 @@
 // ignore_for_file: unnecessary_underscores
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'package:albumtracker/core/constants/app_constants.dart';
 import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
@@ -31,7 +31,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  HomeTab _tab = HomeTab.groups;
+  HomeTab _tab = HomeTab.homeTabGroups;
   HomeNavItem _navIndex = HomeNavItem.album;
 
   @override
@@ -81,7 +81,7 @@ class _HomePageState extends State<HomePage> {
               onChanged: (v) => setState(() => _tab = v),
             ),
             Expanded(
-              child: _tab == HomeTab.groups
+              child: _tab == HomeTab.homeTabGroups
                   ? ListView(
                       padding: const EdgeInsets.only(bottom: 88),
                       children: [
@@ -113,14 +113,14 @@ class _HomePageState extends State<HomePage> {
 
   String _tabLabel(HomeTab tab) {
     switch (tab) {
-      case HomeTab.groups:
-        return AppConstants.homeTabGroups;
-      case HomeTab.teams:
-        return AppConstants.homeTabTeams;
-      case HomeTab.specials:
-        return AppConstants.homeTabSpecials;
-      case HomeTab.marketplace:
-        return AppConstants.homeTabMarketplace;
+      case HomeTab.homeTabGroups:
+        return 'homeTabGroups'.tr();
+      case HomeTab.homeTabTeams:
+        return 'homeTabTeams'.tr();
+      case HomeTab.homeTabSpecials:
+        return 'homeTabSpecials'.tr();
+      case HomeTab.homeTabMarketplace:
+        return 'homeTabMarketplace'.tr();
     }
   }
 
