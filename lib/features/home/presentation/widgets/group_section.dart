@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/theme/app_colors.dart';
 import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
 import 'team_row.dart';
 

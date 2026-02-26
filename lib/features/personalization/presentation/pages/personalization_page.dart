@@ -135,7 +135,9 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                       value: t,
                       child: Text(
                         t.isEmpty ? 'personalizationNone'.tr() : t.tr(),
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colors.onSurface,
+                            ),
                       ),
                     );
                   }).toList(),

@@ -1,5 +1,7 @@
-// ignore_for_file: unnecessary_underscores, unused_import
+// ignore_for_file: unused_local_variable, unnecessary_underscores, unused_import
 
+import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
+import 'package:albumtracker/features/home/presentation/widgets/flag_placeholder.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';

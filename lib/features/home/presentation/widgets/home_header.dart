@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Cabecera de Home: título, subtítulo y icono de perfil.
 class HomeHeader extends StatelessWidget {
