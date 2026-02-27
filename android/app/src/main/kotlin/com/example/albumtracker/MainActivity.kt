@@ -1,4 +1,4 @@
-package com.example.albumtracker
+package com.app.albumcollect
 
 import io.flutter.embedding.android.FlutterActivity
 
