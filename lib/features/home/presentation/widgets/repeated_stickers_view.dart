@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'package:albumtracker/core/data/shield_assets.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
@@ -415,6 +416,10 @@ class _RepeatedStickerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isBadge = stickerId.contains('-B-');
+    final teamCode = teamCodeFromStickerId(stickerId);
+    final shieldPath = isBadge ? getShieldAssetPath(teamCode) : null;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -436,7 +441,7 @@ class _RepeatedStickerCard extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: MainAxisSize.max,
                 children: [
                   Text(
                     'stickerId'.tr(args: [stickerId]),
@@ -449,14 +454,38 @@ class _RepeatedStickerCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    _stickerSubtitleFromId(stickerId),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                  if (isBadge && shieldPath != null)
+                    Expanded(
+                      child: Center(
+                        child: Image.asset(
+                          shieldPath,
+                          fit: BoxFit.contain,
                         ),
-                  ),
+                      ),
+                    )
+                  else if (isBadge)
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'noShieldAvailable'.tr(),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                fontSize: 10,
+                              ),
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      _stickerSubtitleFromId(stickerId),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
                 ],
               ),
             ),
