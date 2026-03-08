@@ -8,7 +8,7 @@ import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
 
-/// Vista de pegatinas faltantes. Misma UI/UX que RepeatedStickersView.
+/// Vista de laminas faltantes. Misma UI/UX que RepeatedStickersView.
 class MissingStickersView extends StatefulWidget {
   const MissingStickersView({super.key});
 

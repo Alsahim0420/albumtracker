@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/theme/app_colors.dart';
 
-/// Estado de una pegatina en el álbum.
+/// Estado de una lamina en el álbum.
 enum StickerState {
   collected,
   missing,
   hasSwaps,
 }
 
-/// Celda de una pegatina en la rejilla del álbum.
+/// Celda de una lamina en la rejilla del álbum.
 class StickerItem extends StatelessWidget {
   const StickerItem({
     super.key,

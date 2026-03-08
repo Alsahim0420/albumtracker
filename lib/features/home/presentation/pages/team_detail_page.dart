@@ -19,7 +19,7 @@ import 'package:albumtracker/features/home/presentation/widgets/team_completion_
 import 'package:albumtracker/features/home/presentation/widgets/team_sticker_card.dart';
 import 'package:albumtracker/features/home/presentation/widgets/team_sticker_filter_tabs.dart';
 
-/// Vista de detalle de un equipo: cabecera, estado, filtros y rejilla de pegatinas.
+/// Vista de detalle de un equipo: cabecera, estado, filtros y rejilla de laminas.
 class TeamDetailPage extends StatelessWidget {
   const TeamDetailPage({
     super.key,

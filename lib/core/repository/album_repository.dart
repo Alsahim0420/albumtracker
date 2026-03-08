@@ -141,7 +141,7 @@ class AlbumRepository {
 
   static int getStickerCount(String stickerId) => _collection[stickerId] ?? 0;
 
-  /// Añade pegatinas por números globales (bulk).
+  /// Añade laminas por números globales (bulk).
   static Future<void> addStickersBulk(Iterable<int> globalNumbers) async {
     await addStickersByGlobalNumbers(globalNumbers);
   }
@@ -150,7 +150,7 @@ class AlbumRepository {
     await hive.setStickerCount(stickerId, count);
   }
 
-  /// Añade pegatinas por números globales (bulk add).
+  /// Añade laminas por números globales (bulk add).
   static Future<void> addStickersByGlobalNumbers(Iterable<int> globalNumbers) async {
     await hive.addStickersByGlobalNumbers(globalNumbers);
   }
