@@ -36,7 +36,9 @@ class AlbumTrackerApp extends StatefulWidget {
 }
 
 class AlbumTrackerAppState extends State<AlbumTrackerApp> {
-  late ThemeData _theme;
+  late ThemeData _themeLight;
+  late ThemeData _themeDark;
+  late ThemeMode _themeMode;
 
   @override
   void initState() {
@@ -46,13 +48,28 @@ class AlbumTrackerAppState extends State<AlbumTrackerApp> {
 
   void _loadTheme() {
     WorldCup2026Seed.getTeamById(storedFavoriteTeam ?? '');
-    _theme = TeamTheme.fromTeamId(storedFavoriteTeam);
+    _themeLight = TeamTheme.fromTeamId(storedFavoriteTeam, brightness: Brightness.light);
+    _themeDark = TeamTheme.fromTeamId(storedFavoriteTeam, brightness: Brightness.dark);
+    _themeMode = _themeModeFromStored(storedThemeMode);
+  }
+
+  static ThemeMode _themeModeFromStored(String mode) {
+    switch (mode) {
+      case 'light': return ThemeMode.light;
+      case 'dark': return ThemeMode.dark;
+      default: return ThemeMode.system;
+    }
   }
 
   void updateTheme(String? teamId) {
     setState(() {
-      _theme = TeamTheme.fromTeamId(teamId);
+      _themeLight = TeamTheme.fromTeamId(teamId, brightness: Brightness.light);
+      _themeDark = TeamTheme.fromTeamId(teamId, brightness: Brightness.dark);
     });
+  }
+
+  void updateThemeMode(ThemeMode mode) {
+    setState(() => _themeMode = mode);
   }
 
   @override
@@ -61,12 +78,17 @@ class AlbumTrackerAppState extends State<AlbumTrackerApp> {
       create: (_) => sl<AlbumBloc>(),
       child: MaterialApp(
         title: AppConstants.appName,
-        theme: _theme,
+        theme: _themeLight,
+        darkTheme: _themeDark,
+        themeMode: _themeMode,
         localizationsDelegates: context.localizationDelegates,
         supportedLocales: context.supportedLocales,
         locale: context.locale,
         debugShowCheckedModeBanner: false,
-        home: _AppEntry(onThemeChanged: updateTheme),
+        home: _AppEntry(
+          onThemeChanged: updateTheme,
+          onThemeModeChanged: updateThemeMode,
+        ),
       ),
     );
   }
@@ -74,9 +96,13 @@ class AlbumTrackerAppState extends State<AlbumTrackerApp> {
 
 /// Controla el flujo de entrada: splash → personalización (solo primera vez) o Home.
 class _AppEntry extends StatefulWidget {
-  const _AppEntry({required this.onThemeChanged});
+  const _AppEntry({
+    required this.onThemeChanged,
+    required this.onThemeModeChanged,
+  });
 
   final void Function(String? teamId) onThemeChanged;
+  final void Function(ThemeMode mode) onThemeModeChanged;
 
   @override
   State<_AppEntry> createState() => _AppEntryState();
@@ -105,7 +131,10 @@ class _AppEntryState extends State<_AppEntry> {
         onThemeChanged: widget.onThemeChanged,
       );
     }
-    return HomePage(onThemeChanged: widget.onThemeChanged);
+    return HomePage(
+      onThemeChanged: widget.onThemeChanged,
+      onThemeModeChanged: widget.onThemeModeChanged,
+    );
   }
 }
 

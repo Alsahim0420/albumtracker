@@ -24,10 +24,12 @@ import 'package:albumtracker/features/home/presentation/pages/team_detail_page.d
 /// Pantalla principal: World Cup 2026, tabs, total collection y grupos con equipos.
 class HomePage extends StatefulWidget {
   final Function(String?) onThemeChanged;
+  final void Function(ThemeMode mode)? onThemeModeChanged;
 
   const HomePage({
     super.key,
     required this.onThemeChanged,
+    this.onThemeModeChanged,
   });
 
   @override
@@ -63,7 +65,10 @@ class _HomePageState extends State<HomePage> {
       case HomeNavItem.missing:
         return const MissingStickersView();
       case HomeNavItem.settings:
-        return SettingsPage(onThemeChanged: widget.onThemeChanged);
+        return SettingsPage(
+          onThemeChanged: widget.onThemeChanged,
+          onThemeModeChanged: widget.onThemeModeChanged,
+        );
     }
   }
 
