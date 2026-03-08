@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 
-/// Card de una pegatina en la rejilla del equipo (encontrada o faltante).
+/// Card de una lamina en la rejilla del equipo (encontrada o faltante).
 class TeamStickerCard extends StatelessWidget {
   const TeamStickerCard({
     super.key,

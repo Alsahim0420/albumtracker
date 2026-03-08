@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 
-/// Bottom sheet para marcar cantidad de una pegatina (+ / - y Listo).
+/// Bottom sheet para marcar cantidad de una lamina (+ / - y Listo).
 class StickerCountSheet extends StatefulWidget {
   const StickerCountSheet({
     super.key,

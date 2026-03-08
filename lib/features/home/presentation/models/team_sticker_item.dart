@@ -1,7 +1,7 @@
-/// Tipo de pegatina en la vista de detalle del equipo.
+/// Tipo de lamina en la vista de detalle del equipo.
 enum TeamStickerType { badge, photo, player }
 
-/// Una pegatina individual en la vista de detalle del equipo (mock).
+/// Una lamina individual en la vista de detalle del equipo (mock).
 class TeamStickerItem {
   const TeamStickerItem({
     required this.code,

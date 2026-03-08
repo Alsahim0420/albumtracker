@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:albumtracker/core/theme/app_colors.dart';
 
-/// Bottom sheet para agregar múltiples pegatinas por números (comas o espacios).
+/// Bottom sheet para agregar múltiples laminas por números (comas o espacios).
 class BulkAddStickersSheet extends StatefulWidget {
   const BulkAddStickersSheet({
     super.key,
