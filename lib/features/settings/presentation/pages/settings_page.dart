@@ -1,7 +1,5 @@
 // ignore_for_file: unused_local_variable, unnecessary_underscores, unused_import
 
-import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
-import 'package:albumtracker/features/home/presentation/widgets/flag_placeholder.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -9,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/core/theme/app_colors.dart';
+import 'package:albumtracker/features/personalization/presentation/pages/personalization_page.dart';
 import 'package:albumtracker/features/settings/presentation/widgets/settings_profile_card.dart';
 import 'package:albumtracker/features/settings/presentation/widgets/settings_section.dart';
 
@@ -69,58 +68,17 @@ class SettingsPage extends StatelessWidget {
     required this.onThemeChanged,
   });
 
-  void _openTeamSelector(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) {
-      final colors = Theme.of(context).colorScheme;
-      final teams = WorldCup2026Seed.groups
-          .expand((g) => g.teams)
-          .toList();
-      return ListView(
-        children: teams.map((team) {
-          return ListTile(
-            title: Text(team.name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.onSurface)),
-            leading: team.flagAssetPath != null &&
-            team.flagAssetPath!.isNotEmpty
-            ? ClipOval(
-                child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: FlagPlaceholder(code: team.flagAssetPath!),
-                ),
-              )
-            : CircleAvatar(
-                backgroundColor: team.primaryColor,
-                child: Text(
-                  team.name.substring(0, 1),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            onTap: () async {
-              await saveUserProfile(
-                name: storedUserName ?? '',
-                favoriteTeam: team.id,
-              );
-
-              if (!context.mounted) return;
-
-              // Actualiza tema
-              onThemeChanged(team.id);
-              if (context.mounted) Navigator.pop(context);
-            },
-        );
-      }).toList(),
+  void _openPersonalizeExperience(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PersonalizationPage(
+          showBackButton: true,
+          onComplete: () => Navigator.of(context).pop(),
+          onThemeChanged: onThemeChanged,
+        ),
+      ),
     );
-  });
-}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -170,9 +128,9 @@ class SettingsPage extends StatelessWidget {
                 onTap: () => _showLanguagePicker(context),
               ),
               SettingsTile(
-                icon: Icons.person_outline,
-                title: 'settingsAccountSettings',
-                onTap: () {},
+                icon: Icons.tune_rounded,
+                title: 'personalizationPageTitle',
+                onTap: () => _openPersonalizeExperience(context),
               ),
               SettingsTile(
                 icon: Icons.notifications_outlined,
@@ -205,8 +163,6 @@ class SettingsPage extends StatelessWidget {
                 title: 'settingsHelpFaq',
                 onTap: () {},
               ),
-              SettingsTile(icon: Icons.favorite_outline, title: 'Equipo favorito', onTap: () => _openTeamSelector(context)),
-              
             ],
           ),
         );
