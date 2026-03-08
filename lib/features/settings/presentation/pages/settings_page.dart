@@ -2,7 +2,9 @@
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
@@ -12,13 +14,15 @@ import 'package:albumtracker/features/settings/presentation/widgets/settings_pro
 import 'package:albumtracker/features/settings/presentation/widgets/settings_section.dart';
 
 void _showLanguagePicker(BuildContext context) {
+  final colors = Theme.of(context).colorScheme;
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppColors.cardBackground,
+    backgroundColor: colors.surfaceContainerHighest,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (ctx) {
+      final ctxColors = Theme.of(ctx).colorScheme;
       return SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -30,7 +34,7 @@ void _showLanguagePicker(BuildContext context) {
                 'settingsLanguage'.tr(),
                 style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: ctxColors.onSurface,
                     ),
               ),
               const SizedBox(height: 16),
@@ -78,6 +82,37 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static const _urlChannel = MethodChannel('com.app.albumcollect/url_launcher');
+
+  Future<void> _openUrl(BuildContext context, String urlString) async {
+    debugPrint('[Settings] _openUrl: intentando abrir "$urlString"');
+    try {
+      try {
+        final ok = await _urlChannel.invokeMethod<bool>('openUrl', {'url': urlString});
+        if (ok == true) {
+          debugPrint('[Settings] _openUrl: canal nativo completado');
+          return;
+        }
+      } on MissingPluginException {
+        // En iOS/web no está el canal; usar url_launcher
+      }
+      final uri = Uri.parse(urlString);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      debugPrint('[Settings] _openUrl: launchUrl completado correctamente');
+    } catch (e, stack) {
+      debugPrint('[Settings] _openUrl: ERROR al abrir enlace');
+      debugPrint('[Settings]   URL: $urlString');
+      debugPrint('[Settings]   Tipo: ${e.runtimeType}');
+      debugPrint('[Settings]   Mensaje: $e');
+      debugPrint('[Settings]   Stack trace:\n$stack');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo abrir el enlace')),
+        );
+      }
+    }
   }
 
   @override
@@ -144,7 +179,7 @@ class SettingsPage extends StatelessWidget {
               SettingsTile(
                 icon: Icons.shield_outlined,
                 title: 'settingsPrivacySecurity',
-                onTap: () {},
+                onTap: () => _openUrl(context, 'https://albumcollect2026.netlify.app/privacidad'),
               ),
               SettingsSectionHeader(title: 'settingsCollectionData'),
               SettingsTile(
@@ -156,7 +191,7 @@ class SettingsPage extends StatelessWidget {
               SettingsTile(
                 icon: Icons.info_outline_rounded,
                 title: 'settingsAppInformation',
-                onTap: () {},
+                onTap: () => _openUrl(context, 'https://albumcollect2026.netlify.app/'),
               ),
               SettingsTile(
                 icon: Icons.help_outline_rounded,
@@ -184,8 +219,9 @@ class _LanguageOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Material(
-      color: AppColors.inputBackground,
+      color: colors.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -198,12 +234,12 @@ class _LanguageOption extends StatelessWidget {
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textPrimary,
+                        color: colors.onSurface,
                       ),
                 ),
               ),
               if (isSelected)
-                Icon(Icons.check_rounded, size: 22, color: AppColors.primary),
+                Icon(Icons.check_rounded, size: 22, color: colors.primary),
             ],
           ),
         ),
