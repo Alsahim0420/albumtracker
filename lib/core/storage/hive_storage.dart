@@ -10,6 +10,8 @@ abstract final class PreferencesKeys {
   static const String userName = 'userName';
   static const String favoriteTeam = 'favoriteTeam';
   static const String profileColorHex = 'profileColorHex';
+  /// 'light' | 'dark' | 'system'
+  static const String themeMode = 'themeMode';
 }
 
 /// Nombre del box de preferencias de la app.
@@ -54,6 +56,26 @@ String? get storedFavoriteTeam =>
 /// Obtiene el color de perfil en hex (opcional), ej. "FF3B82F6".
 String? get storedProfileColorHex =>
     preferencesBox.get(PreferencesKeys.profileColorHex) as String?;
+
+/// Obtiene el modo de tema: 'light', 'dark' o 'system'. Por defecto 'system'.
+String get storedThemeMode {
+  final v = preferencesBox.get(PreferencesKeys.themeMode) as String?;
+  switch (v) {
+    case 'light':
+      return 'light';
+    case 'dark':
+      return 'dark';
+    case 'system':
+      return 'system';
+    default:
+      return 'system';
+  }
+}
+
+/// Guarda el modo de tema ('light', 'dark', 'system').
+Future<void> saveThemeMode(String mode) async {
+  await preferencesBox.put(PreferencesKeys.themeMode, mode);
+}
 
 /// Guarda el perfil de usuario (nombre, equipo favorito, color).
 Future<void> saveUserProfile({

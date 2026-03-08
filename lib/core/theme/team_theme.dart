@@ -3,7 +3,8 @@ import '../data/world_cup_2026_seed.dart';
 import '../models/team_model.dart';
 
 class TeamTheme {
-  static ThemeData fromTeamId(String? teamId) {
+  /// Tema según equipo y brillo (light/dark).
+  static ThemeData fromTeamId(String? teamId, {Brightness brightness = Brightness.dark}) {
     final TeamModel? team =
         WorldCup2026Seed.getTeamById(teamId ?? '');
 
@@ -12,7 +13,7 @@ class TeamTheme {
 
     final colorScheme = ColorScheme.fromSeed(
       seedColor: seedColor,
-      brightness: Brightness.dark,
+      brightness: brightness,
     );
 
     return ThemeData(
