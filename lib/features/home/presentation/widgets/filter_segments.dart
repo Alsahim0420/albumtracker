@@ -1,7 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 
 enum HomeFilter { all, missing, swaps }
 
@@ -23,19 +22,19 @@ class FilterSegments extends StatelessWidget {
       child: Row(
         children: [
           _Segment(
-            label: AppConstants.homeFilterAll,
+            label: 'homeFilterAll'.tr(),
             isSelected: selected == HomeFilter.all,
             isFirst: true,
             onTap: () => onChanged?.call(HomeFilter.all),
           ),
           _Segment(
-            label: AppConstants.homeFilterMissing,
+            label: 'homeFilterMissing'.tr(),
             isSelected: selected == HomeFilter.missing,
             isFirst: false,
             onTap: () => onChanged?.call(HomeFilter.missing),
           ),
           _Segment(
-            label: AppConstants.homeFilterSwaps,
+            label: 'homeFilterSwaps'.tr(),
             isSelected: selected == HomeFilter.swaps,
             isFirst: false,
             isLast: true,
@@ -64,13 +63,14 @@ class _Segment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : AppColors.cardBackground,
+            color: isSelected ? colors.primary : colors.primaryContainer,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(isFirst ? 10 : 0),
               bottomLeft: Radius.circular(isFirst ? 10 : 0),
@@ -78,7 +78,7 @@ class _Segment extends StatelessWidget {
               bottomRight: Radius.circular(isLast ? 10 : 0),
             ),
             border: Border.all(
-              color: AppColors.inputBorder,
+              color: colors.outlineVariant,
               width: 1,
             ),
           ),
@@ -86,7 +86,7 @@ class _Segment extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                  color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
                   fontSize: 14,
                 ),
           ),

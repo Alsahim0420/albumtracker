@@ -1,167 +1,165 @@
+// ignore_for_file: unnecessary_underscores
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../models/album_section_item.dart';
-import '../widgets/filter_segments.dart';
-import '../widgets/flag_placeholder.dart';
-import '../widgets/home_bottom_nav.dart';
-import '../widgets/home_header.dart';
-import '../widgets/progress_card.dart';
-import '../widgets/section_header.dart';
-import '../widgets/sticker_item.dart';
+import 'package:albumtracker/core/repository/album_repository.dart';
+import 'package:albumtracker/core/storage/hive_storage.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
+import 'package:albumtracker/features/settings/presentation/pages/settings_page.dart';
+import 'package:albumtracker/features/home/presentation/models/group_team_item.dart';
+import 'package:albumtracker/features/home/presentation/widgets/bulk_add_stickers_sheet.dart';
+import 'package:albumtracker/features/home/presentation/widgets/group_section.dart';
+import 'package:albumtracker/features/home/presentation/widgets/home_bottom_nav.dart';
+import 'package:albumtracker/features/home/presentation/widgets/home_header_v2.dart';
+import 'package:albumtracker/features/home/presentation/widgets/home_tabs.dart';
+import 'package:albumtracker/features/home/presentation/widgets/missing_stickers_view.dart';
+import 'package:albumtracker/features/home/presentation/widgets/repeated_stickers_view.dart';
+import 'package:albumtracker/features/home/presentation/widgets/total_collection_card.dart';
+import 'package:albumtracker/features/home/presentation/pages/team_detail_page.dart';
 
-/// Pantalla principal: progreso, filtros, secciones del álbum y navegación inferior.
+/// Pantalla principal: World Cup 2026, tabs, total collection y grupos con equipos.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final Function(String?) onThemeChanged;
+  final void Function(ThemeMode mode)? onThemeModeChanged;
+
+  const HomePage({
+    super.key,
+    required this.onThemeChanged,
+    this.onThemeModeChanged,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  HomeFilter _filter = HomeFilter.all;
+  HomeTab _tab = HomeTab.homeTabGroups;
   HomeNavItem _navIndex = HomeNavItem.album;
-
-  static const int _collected = 637;
-  static const int _total = 980;
-  static const int _swapsAvailable = 34;
-
-  late final List<AlbumSection> _sections = _buildMockSections();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: Column(
-          children: [
-            HomeHeader(onProfileTap: () {}),
-            ProgressCard(
-              percent: 65,
-              collected: _collected,
-              total: _total,
-              swapsAvailable: _swapsAvailable,
-            ),
-            FilterSegments(
-              selected: _filter,
-              onChanged: (v) => setState(() => _filter = v),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.only(bottom: 80),
-                itemCount: _sections.length,
-                itemBuilder: (context, index) {
-                  final section = _sections[index];
-                  final items = _filteredItems(section.items);
-                  if (items.isEmpty) return const SizedBox.shrink();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SectionHeader(
-                        title: section.title,
-                        leading: section.flagCode != null
-                            ? FlagPlaceholder(code: section.flagCode!)
-                            : null,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            const crossCount = 5;
-                            final size = (constraints.maxWidth - (crossCount - 1) * 8) / crossCount;
-                            return Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: items
-                                  .map(
-                                    (item) => SizedBox(
-                                      width: size,
-                                      height: size,
-                                      child: StickerItem(
-                                        number: item.number,
-                                        state: item.state,
-                                        swapCount: item.swapCount,
-                                        onTap: () {},
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        child: _buildBody(),
       ),
       bottomNavigationBar: HomeBottomNav(
         currentIndex: _navIndex,
         onTap: (v) => setState(() => _navIndex = v),
-        onFabTap: () {},
+        onFabTap: _openBulkAddSheet,
+        showFab: _navIndex == HomeNavItem.album,
       ),
     );
   }
 
-  List<AlbumStickerItem> _filteredItems(List<AlbumStickerItem> items) {
-    switch (_filter) {
-      case HomeFilter.all:
-        return items;
-      case HomeFilter.missing:
-        return items.where((i) => i.state == StickerState.missing).toList();
-      case HomeFilter.swaps:
-        return items.where((i) => i.swapCount > 0).toList();
+  Widget _buildBody() {
+    switch (_navIndex) {
+      case HomeNavItem.album:
+        return _buildAlbumBody();
+      case HomeNavItem.repeated:
+        return const RepeatedStickersView();
+      case HomeNavItem.missing:
+        return const MissingStickersView();
+      case HomeNavItem.settings:
+        return SettingsPage(
+          onThemeChanged: widget.onThemeChanged,
+          onThemeModeChanged: widget.onThemeModeChanged,
+        );
     }
   }
 
-  static List<AlbumSection> _buildMockSections() {
-    return [
-      AlbumSection(
-        title: 'FWC • INTRO',
-        flagCode: null,
-        items: const [
-          AlbumStickerItem(number: 1, state: StickerState.collected),
-          AlbumStickerItem(number: 2, state: StickerState.missing),
-          AlbumStickerItem(number: 3, state: StickerState.hasSwaps, swapCount: 1),
-          AlbumStickerItem(number: 4, state: StickerState.collected),
-          AlbumStickerItem(number: 5, state: StickerState.collected),
-        ],
+  Widget _buildAlbumBody() {
+    return ValueListenableBuilder(
+      valueListenable: collectionBox.listenable(),
+      builder: (context, __, ___) {
+        final stats = AlbumRepository.getGlobalStats();
+        final groups = AlbumRepository.getGroupsWithProgress();
+        return Column(
+          children: [
+            HomeHeaderV2(onSearch: () {}),
+            TotalCollectionCard(
+              collected: stats.collectedStickers,
+              total: stats.totalStickers,
+            ),
+            HomeTabs(
+              selected: _tab,
+              onChanged: (v) => setState(() => _tab = v),
+            ),
+            Expanded(
+              child: _tab == HomeTab.homeTabGroups
+                  ? ListView(
+                      padding: const EdgeInsets.only(bottom: 88),
+                      children: [
+                        ...groups.map(
+                          (g) => GroupSection(
+                            group: g,
+                            onTeamTap: (team) => _openTeamDetail(team, g.name),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    )
+                  : _buildPlaceholderTab(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPlaceholderTab() {
+    return Center(
+      child: Text(
+        _tabLabel(_tab),
+        style: Theme.of(context).textTheme.bodyMedium,
       ),
-      AlbumSection(
-        title: 'FRA • FRANCE',
-        flagCode: 'FRA',
-        items: const [
-          AlbumStickerItem(number: 6, state: StickerState.hasSwaps, swapCount: 3),
-          AlbumStickerItem(number: 7, state: StickerState.collected),
-          AlbumStickerItem(number: 8, state: StickerState.missing),
-          AlbumStickerItem(number: 9, state: StickerState.collected),
-          AlbumStickerItem(number: 10, state: StickerState.missing),
-          AlbumStickerItem(number: 11, state: StickerState.missing),
-          AlbumStickerItem(number: 12, state: StickerState.collected),
-          AlbumStickerItem(number: 13, state: StickerState.collected),
-          AlbumStickerItem(number: 14, state: StickerState.hasSwaps, swapCount: 1),
-          AlbumStickerItem(number: 15, state: StickerState.missing),
-          AlbumStickerItem(number: 16, state: StickerState.collected),
-          AlbumStickerItem(number: 17, state: StickerState.collected),
-          AlbumStickerItem(number: 18, state: StickerState.collected),
-          AlbumStickerItem(number: 19, state: StickerState.missing),
-          AlbumStickerItem(number: 20, state: StickerState.collected),
-        ],
+    );
+  }
+
+  String _tabLabel(HomeTab tab) {
+    switch (tab) {
+      case HomeTab.homeTabGroups:
+        return 'homeTabGroups'.tr();
+      case HomeTab.homeTabTeams:
+        return 'homeTabTeams'.tr();
+      case HomeTab.homeTabSpecials:
+        return 'homeTabSpecials'.tr();
+      case HomeTab.homeTabMarketplace:
+        return 'homeTabMarketplace'.tr();
+    }
+  }
+
+  void _openTeamDetail(TeamProgress team, String groupName) {
+    final teamId = AlbumRepository.getTeamIdByGroupAndTeamName(groupName, team.name);
+    if (teamId == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TeamDetailPage(teamId: teamId, groupName: groupName),
       ),
-      AlbumSection(
-        title: 'COL • COLOMBIA',
-        flagCode: 'COL',
-        items: List.generate(
-          20,
-          (i) => AlbumStickerItem(
-            number: 21 + i,
-            state: i < 4 ? StickerState.missing : StickerState.collected,
-          ),
+    );
+  }
+
+  void _openBulkAddSheet() {
+    final colors = Theme.of(context).colorScheme;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colors.surface,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: BulkAddStickersSheet(
+          onConfirm: (globalNumbers) async {
+            context.read<AlbumBloc>().add(AlbumBulkAddRequested(globalNumbers));
+            if (context.mounted) setState(() {});
+          },
         ),
       ),
-    ];
+    );
   }
 }

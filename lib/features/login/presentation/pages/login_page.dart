@@ -1,6 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/google_icon.dart';
 import '../widgets/login_header.dart';
@@ -34,27 +34,27 @@ class LoginPage extends StatelessWidget {
               const LoginHeader(),
               const SizedBox(height: 32),
               Text(
-                AppConstants.loginEmailLabel,
+                'loginEmailLabel'.tr(),
                 style: Theme.of(context).textTheme.labelLarge,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  hintText: AppConstants.loginEmailHint,
+                  hintText: 'loginEmailHint'.tr(),
                   suffixIcon: const Icon(Icons.mail_outline, size: 22),
                 ),
               ),
               const SizedBox(height: 20),
               Text(
-                AppConstants.loginPasswordLabel,
+                'loginPasswordLabel'.tr(),
                 style: Theme.of(context).textTheme.labelLarge,
               ),
               const SizedBox(height: 8),
               TextFormField(
                 obscureText: true,
                 decoration: InputDecoration(
-                  hintText: AppConstants.loginPasswordHint,
+                  hintText: 'loginPasswordHint'.tr(),
                   suffixIcon: const Icon(Icons.visibility_off_outlined, size: 22),
                 ),
               ),
@@ -67,7 +67,7 @@ class LoginPage extends StatelessWidget {
                     foregroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(horizontal: 0),
                   ),
-                  child: const Text(AppConstants.loginForgotPassword),
+                  child: Text('loginForgotPassword'.tr()),
                 ),
               ),
               const SizedBox(height: 24),
@@ -76,7 +76,7 @@ class LoginPage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(AppConstants.loginButton),
+                    Text('loginButton'.tr()),
                     const SizedBox(width: 8),
                     const Icon(Icons.arrow_forward, size: 20),
                   ],
@@ -89,7 +89,7 @@ class LoginPage extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      AppConstants.loginOrContinueWith,
+                      'loginOrContinueWith'.tr(),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -101,7 +101,7 @@ class LoginPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: SocialLoginButton(
-                      label: AppConstants.loginGoogle,
+                      label: 'loginGoogle',
                       icon: const GoogleIcon(size: 20),
                       onPressed: () {},
                     ),
@@ -109,7 +109,7 @@ class LoginPage extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: SocialLoginButton(
-                      label: AppConstants.loginApple,
+                      label: 'loginApple',
                       icon: const Icon(Icons.apple_rounded, size: 22, color: AppColors.socialButtonText),
                       onPressed: () {},
                     ),
@@ -121,7 +121,7 @@ class LoginPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    AppConstants.loginNoAccount,
+                    'loginNoAccount'.tr(),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   TextButton(
@@ -132,7 +132,7 @@ class LoginPage extends StatelessWidget {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(AppConstants.loginCreateAccount),
+                    child: Text('loginCreateAccount'.tr()),
                   ),
                 ],
               ),

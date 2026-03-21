@@ -1,7 +1,6 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 
 /// Card de progreso: porcentaje, barra, contador y swaps disponibles.
 class ProgressCard extends StatelessWidget {
@@ -20,13 +19,14 @@ class ProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: colors.primaryContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.inputBorder, width: 1),
+        border: Border.all(color: colors.outlineVariant, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +46,7 @@ class ProgressCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    AppConstants.homeCompleted,
+                    'homeCompleted'.tr(),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -57,8 +57,8 @@ class ProgressCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: LinearProgressIndicator(
                     value: percent / 100,
-                    backgroundColor: AppColors.progressTrack,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    backgroundColor: colors.onSurfaceVariant.withValues(alpha: 0.5),
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.onSurfaceVariant),
                     borderRadius: BorderRadius.circular(4),
                     minHeight: 8,
                   ),
@@ -75,16 +75,16 @@ class ProgressCard extends StatelessWidget {
                         TextSpan(text: '$collected'),
                         TextSpan(
                           text: ' / $total',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(color: colors.onSurfaceVariant),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$swapsAvailable ${AppConstants.homeSwapsAvailable}',
+                    '$swapsAvailable ${'homeSwapsAvailable'.tr()}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.swapGreen,
+                          color: colors.primaryContainer,
                           fontWeight: FontWeight.w600,
                         ),
                   ),

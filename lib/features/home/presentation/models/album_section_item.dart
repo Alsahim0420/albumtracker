@@ -1,6 +1,6 @@
 import '../widgets/sticker_item.dart';
 
-/// Modelo de un ítem de pegatina dentro de una sección (solo presentación/mock).
+/// Modelo de un ítem de lamina dentro de una sección (solo presentación/mock).
 class AlbumStickerItem {
   const AlbumStickerItem({
     required this.number,

@@ -1,10 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 
 /// Índice de la pestaña inferior.
-enum HomeNavItem { album, trade, stats, settings }
+enum HomeNavItem { album, repeated, missing, settings }
 
 /// Barra inferior con pestañas y FAB.
 class HomeBottomNav extends StatelessWidget {
@@ -13,17 +12,21 @@ class HomeBottomNav extends StatelessWidget {
     required this.currentIndex,
     this.onTap,
     this.onFabTap,
+    this.showFab = true,
   });
 
   final HomeNavItem currentIndex;
   final ValueChanged<HomeNavItem>? onTap;
   final VoidCallback? onFabTap;
+  /// Si false, no se muestra el FAB (ej. en Settings).
+  final bool showFab;
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.navBarBackground,
+        color: colors.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
@@ -45,56 +48,29 @@ class HomeBottomNav extends StatelessWidget {
                 children: [
                   _NavTile(
                     icon: Icons.grid_view_rounded,
-                    label: AppConstants.homeNavAlbum,
+                    label: 'homeNavAlbum'.tr(),
                     isSelected: currentIndex == HomeNavItem.album,
                     onTap: () => onTap?.call(HomeNavItem.album),
                   ),
                   _NavTile(
-                    icon: Icons.swap_horiz,
-                    label: AppConstants.homeNavTrade,
-                    isSelected: currentIndex == HomeNavItem.trade,
-                    onTap: () => onTap?.call(HomeNavItem.trade),
+                    icon: Icons.copy_rounded,
+                    label: 'homeNavRepeated'.tr(),
+                    isSelected: currentIndex == HomeNavItem.repeated,
+                    onTap: () => onTap?.call(HomeNavItem.repeated),
                   ),
-                  const SizedBox(width: 56),
                   _NavTile(
-                    icon: Icons.bar_chart_rounded,
-                    label: AppConstants.homeNavStats,
-                    isSelected: currentIndex == HomeNavItem.stats,
-                    onTap: () => onTap?.call(HomeNavItem.stats),
+                    icon: Icons.playlist_add_rounded,
+                    label: 'homeFilterMissing'.tr(),
+                    isSelected: currentIndex == HomeNavItem.missing,
+                    onTap: () => onTap?.call(HomeNavItem.missing),
                   ),
                   _NavTile(
                     icon: Icons.settings_outlined,
-                    label: AppConstants.homeNavSettings,
+                    label: 'homeNavSettings'.tr(),
                     isSelected: currentIndex == HomeNavItem.settings,
                     onTap: () => onTap?.call(HomeNavItem.settings),
                   ),
                 ],
-              ),
-              Positioned(
-                top: -20,
-                child: GestureDetector(
-                  onTap: onFabTap,
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      color: AppColors.textPrimary,
-                      size: 28,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
@@ -119,7 +95,8 @@ class _NavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : AppColors.navUnselected;
+    final colors = Theme.of(context).colorScheme;
+    final color = isSelected ? colors.primary : colors.onSurface.withValues(alpha: 0.6);
     return InkWell(
       onTap: onTap,
       child: Padding(
