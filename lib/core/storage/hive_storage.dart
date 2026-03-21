@@ -10,12 +10,14 @@ abstract final class PreferencesKeys {
   static const String userName = 'userName';
   static const String favoriteTeam = 'favoriteTeam';
   static const String profileColorHex = 'profileColorHex';
+  /// 'light' | 'dark' | 'system'
+  static const String themeMode = 'themeMode';
 }
 
 /// Nombre del box de preferencias de la app.
 const String kPreferencesBoxName = 'app_preferences';
 
-/// Nombre del box de progreso de colección (pegatinas).
+/// Nombre del box de progreso de colección (laminas).
 const String kCollectionBoxName = 'collection_box';
 
 /// Clave del mapa de colección: stickerId -> count (1 = collected, >1 = duplicates).
@@ -55,6 +57,26 @@ String? get storedFavoriteTeam =>
 String? get storedProfileColorHex =>
     preferencesBox.get(PreferencesKeys.profileColorHex) as String?;
 
+/// Obtiene el modo de tema: 'light', 'dark' o 'system'. Por defecto 'system'.
+String get storedThemeMode {
+  final v = preferencesBox.get(PreferencesKeys.themeMode) as String?;
+  switch (v) {
+    case 'light':
+      return 'light';
+    case 'dark':
+      return 'dark';
+    case 'system':
+      return 'system';
+    default:
+      return 'system';
+  }
+}
+
+/// Guarda el modo de tema ('light', 'dark', 'system').
+Future<void> saveThemeMode(String mode) async {
+  await preferencesBox.put(PreferencesKeys.themeMode, mode);
+}
+
 /// Guarda el perfil de usuario (nombre, equipo favorito, color).
 Future<void> saveUserProfile({
   required String name,
@@ -93,7 +115,7 @@ Future<void> saveCollectedStickersMap(Map<String, int> map) async {
   await collectionBox.put(kCollectedStickersKey, map);
 }
 
-/// Establece la cantidad de una pegatina (0 = no tiene, 1+ = tiene y duplicados).
+/// Establece la cantidad de una lamina (0 = no tiene, 1+ = tiene y duplicados).
 Future<void> setStickerCount(String stickerId, int count) async {
   final map = Map<String, int>.from(collectedStickersMap);
   if (count <= 0) {
@@ -104,7 +126,7 @@ Future<void> setStickerCount(String stickerId, int count) async {
   await saveCollectedStickersMap(map);
 }
 
-/// Añade pegatinas por número global (bulk add). Para cada número, pone count en 1 o incrementa.
+/// Añade laminas por número global (bulk add). Para cada número, pone count en 1 o incrementa.
 Future<void> addStickersByGlobalNumbers(Iterable<int> globalNumbers) async {
   final map = Map<String, int>.from(collectedStickersMap);
   for (final n in globalNumbers) {

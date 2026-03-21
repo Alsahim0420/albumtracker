@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../widgets/splash_app_icon.dart';
 import '../widgets/splash_footer.dart';
 
@@ -37,8 +36,9 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.splashBackground,
+      backgroundColor: colors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -47,14 +47,17 @@ class _SplashPageState extends State<SplashPage> {
             const SizedBox(height: 24),
             Text(
               'appName'.tr(),
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: colors.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 20),
             SizedBox(
               width: 120,
               child: LinearProgressIndicator(
-                backgroundColor: AppColors.progressTrack,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                backgroundColor: colors.surface,
+                valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
               ),
             ),
             const Spacer(flex: 2),

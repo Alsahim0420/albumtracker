@@ -1,13 +1,13 @@
 // ignore_for_file: constant_identifier_names
 
-/// Tipo de pegatina (modelo Qatar 2022: badge, team_photo, player).
+/// Tipo de lamina (modelo Qatar 2022: badge, team_photo, player).
 enum StickerType {
   badge,
   team_photo,
   player,
 }
 
-/// Modelo de dominio: una pegatina del álbum.
+/// Modelo de dominio: una lamina del álbum.
 class StickerModel {
   const StickerModel({
     required this.id,

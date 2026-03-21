@@ -7,7 +7,7 @@ import '../models/sticker_model.dart';
 import '../models/team_model.dart';
 
 /// Estructura estática del álbum World Cup 2026.
-/// 12 grupos (A–L), 48 equipos, 20 pegatinas por equipo (1 badge, 1 team photo, 18 players).
+/// 12 grupos (A–L), 48 equipos, 20 laminas por equipo (1 badge, 1 team photo, 18 players).
 /// Total: 960 team stickers. Extensible a stadiums, specials, etc.
 class WorldCup2026Seed {
   WorldCup2026Seed._();

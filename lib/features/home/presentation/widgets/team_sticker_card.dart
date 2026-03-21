@@ -1,9 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:albumtracker/core/data/shield_assets.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 
-/// Card de una pegatina en la rejilla del equipo (encontrada o faltante).
+/// Card de una lamina en la rejilla del equipo (encontrada o faltante).
 class TeamStickerCard extends StatelessWidget {
   const TeamStickerCard({
     super.key,
@@ -34,7 +35,7 @@ class TeamStickerCard extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.fromLTRB(10, 10, 20, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
@@ -97,17 +98,59 @@ class TeamStickerCard extends StatelessWidget {
           fontWeight: FontWeight.w600,
           fontSize: 12,
         );
+    if (sticker.type == TeamStickerType.badge) {
+      final teamCode = teamCodeFromStickerId(sticker.code);
+      final shieldPath = getShieldAssetPath(teamCode);
+      if (shieldPath != null) {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: Center(
+                child: Image.asset(
+                  shieldPath,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'teamDetailTeamBadge'.tr(),
+              style: textStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        );
+      }
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.shield_outlined, size: 28, color: colors.onSurfaceVariant),
+          const SizedBox(height: 4),
+          Text(
+            'noShieldAvailable'.tr(),
+            style: textStyle?.copyWith(fontSize: 10),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
     final IconData icon;
     switch (sticker.type) {
-      case TeamStickerType.badge:
-        icon = Icons.star;
-        break;
       case TeamStickerType.photo:
         icon = Icons.people_outline;
         break;
       case TeamStickerType.player:
         icon = Icons.person_outline;
         break;
+      default:
+        icon = Icons.star;
     }
     if (sticker.type == TeamStickerType.photo && !sticker.collected) {
       return Column(
@@ -140,7 +183,7 @@ class TeamStickerCard extends StatelessWidget {
         Icon(
           icon,
           size: 18,
-            color: isCollected ? colors.onPrimary : colors.onSurfaceVariant,
+          color: isCollected ? colors.onPrimary : colors.onSurfaceVariant,
         ),
         const SizedBox(width: 6),
         Expanded(

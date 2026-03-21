@@ -11,6 +11,7 @@ import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
+import 'package:albumtracker/features/home/presentation/bloc/album_state.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 import 'package:albumtracker/features/home/presentation/widgets/flag_placeholder.dart';
 import '../widgets/sticker_count_sheet.dart';
@@ -18,7 +19,7 @@ import 'package:albumtracker/features/home/presentation/widgets/team_completion_
 import 'package:albumtracker/features/home/presentation/widgets/team_sticker_card.dart';
 import 'package:albumtracker/features/home/presentation/widgets/team_sticker_filter_tabs.dart';
 
-/// Vista de detalle de un equipo: cabecera, estado, filtros y rejilla de pegatinas.
+/// Vista de detalle de un equipo: cabecera, estado, filtros y rejilla de laminas.
 class TeamDetailPage extends StatelessWidget {
   const TeamDetailPage({
     super.key,
@@ -123,11 +124,16 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
     }
     final missing = total - found;
     final filtered = _filteredStickers(stickers);
-
-    return ValueListenableBuilder<Box>(
-      valueListenable: collectionBox.listenable(),
-      builder: (context, __, ___) {
-        return Scaffold(
+    return BlocListener<AlbumBloc, AlbumState>(
+      listener: (context, state) {
+        if (state is AlbumLoaded) {
+          setState(() {});
+        }
+      },
+      child: ValueListenableBuilder<Box>(
+        valueListenable: collectionBox.listenable(),
+        builder: (context, __, ___) {
+          return Scaffold(
           backgroundColor: colors.surface,
           appBar: AppBar(
             backgroundColor: colors.surface,
@@ -217,7 +223,8 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
             ),
           ),
         );
-      },
+        },
+      ),
     );
   }
 

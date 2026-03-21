@@ -8,7 +8,7 @@ sealed class AlbumEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Solicita actualizar el conteo de una pegatina.
+/// Solicita actualizar el conteo de una lamina.
 final class AlbumUpdateStickerCountRequested extends AlbumEvent {
   const AlbumUpdateStickerCountRequested({
     required this.stickerId,
@@ -22,7 +22,7 @@ final class AlbumUpdateStickerCountRequested extends AlbumEvent {
   List<Object?> get props => [stickerId, count];
 }
 
-/// Solicita añadir pegatinas por números globales (bulk add).
+/// Solicita añadir laminas por números globales (bulk add).
 final class AlbumBulkAddRequested extends AlbumEvent {
   const AlbumBulkAddRequested(this.globalNumbers);
 
