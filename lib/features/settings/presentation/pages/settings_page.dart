@@ -201,15 +201,6 @@ class SettingsPage extends StatelessWidget {
                 onTap: () => _openPersonalizeExperience(context),
               ),
               SettingsTile(
-                icon: Icons.notifications_outlined,
-                title: 'settingsNotifications',
-                trailing: Text(
-                  'settingsNotificationsOn'.tr(),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                onTap: () {},
-              ),
-              SettingsTile(
                 icon: Icons.shield_outlined,
                 title: 'settingsPrivacySecurity',
                 onTap: () => _openUrl(context, 'https://albumcollect2026.netlify.app/privacidad'),
