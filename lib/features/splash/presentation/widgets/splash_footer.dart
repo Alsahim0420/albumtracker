@@ -5,7 +5,13 @@ import '../../../../core/theme/app_colors.dart';
 
 /// Pie de página del splash: edición y versión.
 class SplashFooter extends StatelessWidget {
-  const SplashFooter({super.key});
+  final String version;
+
+  const SplashFooter({
+  super.key,
+  required this.version,
+  });
+
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +31,12 @@ class SplashFooter extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'versionTagline'.tr(),
-          style: Theme.of(context).textTheme.bodySmall,
+          'versionTagline'.tr(
+            namedArgs: {
+              'version': version,
+            },
+          ),
+           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
     );

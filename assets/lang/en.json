@@ -3,7 +3,7 @@
     "version": "v1.0.2",
     "edition": "WORLD CUP 2026 EDITION",
     "tagline": "Made for Collectors",
-    "versionTagline": "v1.0.2 • Made for Collectors",
+    "versionTagline": "{version} • Made for Collectors",
     "personalizationTitle": "Personalize your experience",
     "personalizationPageTitle": "Personalize Experience",
     "personalizationSubtitle": "Set up your profile to get started. You can change this later in Settings.",

@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../widgets/splash_app_icon.dart';
@@ -21,10 +22,13 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  String version = "";
+
   @override
   void initState() {
     super.initState();
     _scheduleNavigation();
+    loadVersion();
   }
 
   void _scheduleNavigation() {
@@ -32,6 +36,13 @@ class _SplashPageState extends State<SplashPage> {
       const Duration(milliseconds: AppConstants.splashDurationMs),
       () => widget.onComplete?.call(),
     );
+  }
+
+    void loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    setState(() {
+      version = "${info.version} (${info.buildNumber})";
+    });
   }
 
   @override
@@ -61,9 +72,9 @@ class _SplashPageState extends State<SplashPage> {
               ),
             ),
             const Spacer(flex: 2),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(bottom: 32),
-              child: SplashFooter(),
+              child: SplashFooter(version:version),
             ),
           ],
         ),

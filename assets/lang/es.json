@@ -3,7 +3,7 @@
     "version": "v1.0.2",
     "edition": "COPA DEL MUNDO EDICIÓN 2026",
     "tagline": "Hecho para coleccionistas",
-    "versionTagline": "v1.0.2 • Hecho para coleccionistas",
+    "versionTagline": "{version} • Hecho para coleccionistas",
     "personalizationTitle": "Personaliza tu experiencia",
     "personalizationPageTitle": "Personalizar Experiencia",
     "personalizationSubtitle": "Configura tu perfil para empezar. Puedes cambiar esto más adelante en Configuración.",
