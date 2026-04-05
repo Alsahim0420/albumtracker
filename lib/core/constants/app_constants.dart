@@ -116,8 +116,6 @@ abstract final class AppConstants {
   static const String settingsStickersCollected = 'Stickers Collected';
   static const String settingsAccount = 'ACCOUNT';
   static const String settingsAccountSettings = 'Account Settings';
-  static const String settingsNotifications = 'Notifications';
-  static const String settingsNotificationsOn = 'On';
   static const String settingsPrivacySecurity = 'Privacy & Security';
   static const String settingsCollectionData = 'COLLECTION DATA';
   static const String settingsExportData = 'Export Data';

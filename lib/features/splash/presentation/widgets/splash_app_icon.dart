@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_underscores
+
 import 'package:flutter/material.dart';
 
 /// Icono de la app en el splash. Usa el asset del launcher.
