@@ -163,7 +163,7 @@ class _StickerPreviewCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                label,
+                label.tr(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: colors.onSurface.withValues(alpha: 0.95),
                     ),

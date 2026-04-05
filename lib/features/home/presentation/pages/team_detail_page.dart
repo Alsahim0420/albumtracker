@@ -7,6 +7,7 @@ import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/models/team_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:albumtracker/core/i18n/group_localization.dart';
 import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
@@ -164,7 +165,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _TeamHeader(
-                  teamName: team.name,
+                  teamName: team.name.tr(),
                   groupName: widget.groupName,
                   flagAssetPath: team.flagAssetPath ?? '',
                 ),
@@ -287,7 +288,9 @@ class _TeamHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'teamDetailGroupEvent'.tr(args: [groupName]),
+                  'teamDetailGroupEvent'.tr(
+                    args: [localizedGroupDisplayName(groupName)],
+                  ),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

@@ -35,7 +35,12 @@ class TeamStickerCard extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 20, 10),
+              padding: EdgeInsets.fromLTRB(
+                10,
+                10,
+                _trailingPaddingForCard(sticker.type, count),
+                10,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
@@ -53,7 +58,7 @@ class TeamStickerCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Expanded(
-                    child: _buildCenterContent(context, isCollected),
+                    child: _buildCenterContent(context, isCollected, count),
                   ),
                 ],
               ),
@@ -61,29 +66,7 @@ class TeamStickerCard extends StatelessWidget {
             Positioned(
               right: 8,
               bottom: 8,
-              child: isCollected
-                  ? (count != null && count! > 1)
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: colors.primaryContainer,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '$count',
-                            style:TextStyle(
-                              color: colors.onSurface,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        )
-                      : Icon(Icons.check_circle, color: colors.onSurface, size: 20)
-                  : Icon(
-                      Icons.circle_outlined,
-                      color: colors.onSurfaceVariant.withValues(alpha: 0.6),
-                      size: 20,
-                    ),
+              child: _buildCornerStatus(context, colors, isCollected),
             ),
           ],
         ),
@@ -91,7 +74,66 @@ class TeamStickerCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCenterContent(BuildContext context, bool isCollected) {
+  /// Espacio derecho: si el contador va en línea con el escudo (badge + duplicados), no hace falta reservar tanto.
+  double _trailingPaddingForCard(TeamStickerType type, int? count) {
+    if (type == TeamStickerType.badge && count != null && count > 1) {
+      return 10;
+    }
+    return 20;
+  }
+
+  /// Contador de duplicados en la esquina solo si no va integrado en la fila del badge.
+  Widget _buildCornerStatus(BuildContext context, ColorScheme colors, bool isCollected) {
+    if (!isCollected) {
+      return Icon(
+        Icons.circle_outlined,
+        color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+        size: 20,
+      );
+    }
+    final n = count;
+    if (n != null && n > 1 && sticker.type == TeamStickerType.badge) {
+      return const SizedBox.shrink();
+    }
+    if (n != null && n > 1) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        decoration: BoxDecoration(
+          color: colors.primaryContainer,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          '$n',
+          style: TextStyle(
+            color: colors.onSurface,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+    return Icon(Icons.check_circle, color: colors.onSurface, size: 20);
+  }
+
+  Widget _duplicateChip(BuildContext context, ColorScheme colors, int n) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '$n',
+        style: TextStyle(
+          color: colors.onSurface,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterContent(BuildContext context, bool isCollected, int? count) {
     final colors = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: isCollected ? colors.onPrimary : colors.onSurfaceVariant,
@@ -115,12 +157,23 @@ class TeamStickerCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              'teamDetailTeamBadge'.tr(),
-              style: textStyle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    'teamDetailTeamBadge'.tr(),
+                    style: textStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                if (count != null && count > 1) ...[
+                  const SizedBox(width: 6),
+                  _duplicateChip(context, colors, count),
+                ],
+              ],
             ),
           ],
         );
@@ -131,12 +184,23 @@ class TeamStickerCard extends StatelessWidget {
         children: [
           Icon(Icons.shield_outlined, size: 28, color: colors.onSurfaceVariant),
           const SizedBox(height: 4),
-          Text(
-            'noShieldAvailable'.tr(),
-            style: textStyle?.copyWith(fontSize: 10),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  'noShieldAvailable'.tr(),
+                  style: textStyle?.copyWith(fontSize: 10),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              if (count != null && count > 1) ...[
+                const SizedBox(width: 6),
+                _duplicateChip(context, colors, count),
+              ],
+            ],
           ),
         ],
       );
@@ -163,15 +227,6 @@ class TeamStickerCard extends StatelessWidget {
           Text(
             'teamDetailTeamPhoto'.tr(),
             style: textStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            'teamDetailNotFound'.tr(),
-            style: textStyle?.copyWith(
-              fontSize: 10,
-              color: colors.onSurfaceVariant,
-            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
