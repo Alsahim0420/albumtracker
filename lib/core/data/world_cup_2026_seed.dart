@@ -46,13 +46,20 @@ class WorldCup2026Seed {
     return null;
   }
 
-  /// Título en tarjetas (repetidas / faltantes): nombre del jugador en PL-*; si no hay dato, el código.
+  /// Número de lámina visible: solo el entero global ascendente.
+  static String stickerNumberLabel(String stickerId) {
+    final g = getStickerById(stickerId)?.globalNumber;
+    if (g != null) return g.toString();
+    return stickerId;
+  }
+
+  /// Título en tarjetas (repetidas / faltantes): nombre del jugador en PL-*; si no, el número global.
   static String stickerCaptionTitle(String stickerId) {
     if (stickerId.contains('-PL-')) {
       final n = getStickerById(stickerId)?.playerName;
       if (n != null && n.isNotEmpty) return n;
     }
-    return stickerId;
+    return stickerNumberLabel(stickerId);
   }
 
   static List<GroupModel> _buildGroups() {

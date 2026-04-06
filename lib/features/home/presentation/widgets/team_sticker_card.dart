@@ -46,7 +46,9 @@ class TeamStickerCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.max,
                 children: [
                   Text(
-                    'stickerId'.tr(args: [sticker.code]),
+                    'stickerId'.tr(args: [
+                      sticker.globalNumber?.toString() ?? sticker.code,
+                    ]),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: isCollected
                               ? colors.onPrimary.withValues(alpha: 0.9)
