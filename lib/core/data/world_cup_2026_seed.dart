@@ -46,6 +46,15 @@ class WorldCup2026Seed {
     return null;
   }
 
+  /// Título en tarjetas (repetidas / faltantes): nombre del jugador en PL-*; si no hay dato, el código.
+  static String stickerCaptionTitle(String stickerId) {
+    if (stickerId.contains('-PL-')) {
+      final n = getStickerById(stickerId)?.playerName;
+      if (n != null && n.isNotEmpty) return n;
+    }
+    return stickerId;
+  }
+
   static List<GroupModel> _buildGroups() {
     _globalCounter = 0;
     const groupNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];

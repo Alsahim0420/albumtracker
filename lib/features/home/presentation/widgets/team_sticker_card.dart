@@ -243,7 +243,9 @@ class TeamStickerCard extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            sticker.name?.tr() ?? sticker.label.tr(),
+            sticker.type == TeamStickerType.player
+                ? (sticker.name ?? sticker.label)
+                : (sticker.name?.tr() ?? sticker.label.tr()),
             style: textStyle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
