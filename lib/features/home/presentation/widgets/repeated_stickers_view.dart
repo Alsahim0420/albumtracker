@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/data/shield_assets.dart';
+import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
@@ -392,9 +393,9 @@ class _FilterListTile extends StatelessWidget {
   }
 }
 
-/// Subtitle derived from stickerId: B=Badge, P=Photo, PL=Player.
+/// Subtítulo en tarjeta (no badge): PL-* muestra el código; resto tipo de lámina.
 String _stickerSubtitleFromId(String stickerId) {
-  if (stickerId.contains('-PL-')) return 'player'.tr();
+  if (stickerId.contains('-PL-')) return stickerId;
   if (stickerId.contains('-B-')) return 'badge'.tr();
   if (stickerId.contains('-P-')) return 'photo'.tr();
   return 'sticker'.tr();
@@ -444,11 +445,12 @@ class _RepeatedStickerCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.max,
                 children: [
                   Text(
-                    'stickerId'.tr(args: [stickerId]),
+                    WorldCup2026Seed.stickerCaptionTitle(stickerId),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.onSurface,
-                          fontSize: 10,
-                          fontFamily: 'monospace',
+                          fontSize: stickerId.contains('-PL-') ? 11 : 10,
+                          fontFamily: stickerId.contains('-PL-') ? null : 'monospace',
+                          fontWeight: stickerId.contains('-PL-') ? FontWeight.w600 : null,
                         ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -484,6 +486,7 @@ class _RepeatedStickerCard extends StatelessWidget {
                             color: colors.onSurfaceVariant,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
+                            fontFamily: stickerId.contains('-PL-') ? 'monospace' : null,
                           ),
                     ),
                 ],
@@ -573,7 +576,7 @@ class _CountSheet extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'stickerId'.tr(args: [stickerId]),
+                WorldCup2026Seed.stickerCaptionTitle(stickerId),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: colors.onSurface,
                       fontWeight: FontWeight.w600,
@@ -583,6 +586,7 @@ class _CountSheet extends StatelessWidget {
                 _stickerSubtitleFromId(stickerId),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
+                      fontFamily: stickerId.contains('-PL-') ? 'monospace' : null,
                     ),
               ),
               const SizedBox(height: 24),
