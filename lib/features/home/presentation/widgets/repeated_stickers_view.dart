@@ -393,9 +393,11 @@ class _FilterListTile extends StatelessWidget {
   }
 }
 
-/// Subtítulo en tarjeta (no badge): PL-* muestra el código; resto tipo de lámina.
+/// Subtítulo en tarjeta (no badge): PL-* muestra el número global; resto tipo de lámina.
 String _stickerSubtitleFromId(String stickerId) {
-  if (stickerId.contains('-PL-')) return stickerId;
+  if (stickerId.contains('-PL-')) {
+    return WorldCup2026Seed.stickerNumberLabel(stickerId);
+  }
   if (stickerId.contains('-B-')) return 'badge'.tr();
   if (stickerId.contains('-P-')) return 'photo'.tr();
   return 'sticker'.tr();

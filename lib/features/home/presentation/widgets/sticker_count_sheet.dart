@@ -160,7 +160,9 @@ class _StickerPreviewCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'stickerId'.tr(args: [sticker.code]),
+                'stickerId'.tr(args: [
+                  sticker.globalNumber?.toString() ?? sticker.code,
+                ]),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: colors.onSurface,
                       fontSize: 28,

@@ -5,6 +5,7 @@ enum TeamStickerType { badge, photo, player }
 class TeamStickerItem {
   const TeamStickerItem({
     required this.code,
+    this.globalNumber,
     required this.label,
     this.name,
     required this.type,
@@ -13,6 +14,8 @@ class TeamStickerItem {
   });
 
   final String code;
+  /// Número global del álbum (1..960); único valor numérico visible para la lámina.
+  final int? globalNumber;
   final String label;
   final String? name;
   final TeamStickerType type;

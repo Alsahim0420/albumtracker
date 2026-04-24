@@ -68,6 +68,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
       final count = _countFor(s);
       return TeamStickerItem(
         code: s.code,
+        globalNumber: s.globalNumber,
         label: s.displayLabel,
         name: s.playerName,
         type: _stickerType(s.type),

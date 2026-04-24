@@ -186,7 +186,9 @@ class _MissingStickersViewState extends State<MissingStickersView> {
 }
 
 String _stickerSubtitleFromId(String stickerId) {
-  if (stickerId.contains('-PL-')) return stickerId;
+  if (stickerId.contains('-PL-')) {
+    return WorldCup2026Seed.stickerNumberLabel(stickerId);
+  }
   if (stickerId.contains('-B-')) return 'badge'.tr();
   if (stickerId.contains('-P-')) return 'photo'.tr();
   return 'sticker'.tr();
