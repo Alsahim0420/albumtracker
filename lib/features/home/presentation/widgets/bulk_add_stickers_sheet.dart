@@ -53,12 +53,24 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
 
   void _insertShortcut(String char) {
     final text = _controller.text;
-    final selection = _controller.selection;
-    final start = selection.start;
-    final end = selection.end;
+    var selection = _controller.selection;
+    // Sin foco o selección inválida, `start`/`end` pueden ser -1 → RangeError en replaceRange.
+    if (!selection.isValid) {
+      selection = TextSelection.collapsed(offset: text.length);
+    }
+    var start = selection.start.clamp(0, text.length);
+    var end = selection.end.clamp(0, text.length);
+    if (start > end) {
+      final t = start;
+      start = end;
+      end = t;
+    }
     final newText = text.replaceRange(start, end, char);
-    _controller.text = newText;
-    _controller.selection = TextSelection.collapsed(offset: start + char.length);
+    final newOffset = (start + char.length).clamp(0, newText.length);
+    _controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newOffset),
+    );
   }
 
   void _confirm() {
@@ -255,14 +267,22 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                     child: ElevatedButton(
                       onPressed: _parsedNumbers.isEmpty ? null : _confirm,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('bulkAddConfirm'.tr()),
-                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'bulkAddConfirm'.tr(),
+                              maxLines: 2,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
                           const Icon(Icons.check, size: 20),
                         ],
                       ),

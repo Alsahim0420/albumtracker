@@ -31,6 +31,16 @@ final class AlbumBulkAddRequested extends AlbumEvent {
   @override
   List<Object?> get props => [globalNumbers];
 }
+
+final class AlbumScanImagesRequested extends AlbumEvent {
+  const AlbumScanImagesRequested(this.imagePaths);
+
+  final List<String> imagePaths;
+
+  @override
+  List<Object?> get props => [imagePaths];
+}
+
 final class AlbumLoadRequested extends AlbumEvent {
   const AlbumLoadRequested();
 

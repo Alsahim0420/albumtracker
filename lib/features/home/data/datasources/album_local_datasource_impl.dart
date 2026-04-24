@@ -14,9 +14,12 @@ class AlbumLocalDataSourceImpl implements AlbumLocalDatasource {
   }
 
   @override
-  Future<void> addStickersByGlobalNumbers(
-    Iterable<int> globalNumbers,
-  ) async {
+  Future<void> addStickersByGlobalNumbers(Iterable<int> globalNumbers) async {
     await hive.addStickersByGlobalNumbers(globalNumbers);
+  }
+
+  @override
+  Future<void> addStickersByStickerIds(Iterable<String> stickerIds) async {
+    await hive.addStickersByStickerIds(stickerIds);
   }
 }
