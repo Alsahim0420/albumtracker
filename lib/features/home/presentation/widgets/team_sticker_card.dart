@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:albumtracker/core/data/shield_assets.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
@@ -45,20 +46,22 @@ class TeamStickerCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
                 children: [
-                  Text(
-                    'stickerId'.tr(args: [
-                      sticker.globalNumber?.toString() ?? sticker.code,
-                    ]),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isCollected
-                              ? colors.onPrimary.withValues(alpha: 0.9)
-                              : colors.onSurfaceVariant,
-                          fontSize: 11,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
+                  if (sticker.type != TeamStickerType.badge) ...[
+                    Text(
+                      'stickerId'.tr(args: [
+                        _headerCode(sticker),
+                      ]),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isCollected
+                                ? colors.onPrimary.withValues(alpha: 0.9)
+                                : colors.onSurfaceVariant,
+                            fontSize: 11,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   Expanded(
                     child: _buildCenterContent(context, isCollected, count),
                   ),
@@ -146,15 +149,31 @@ class TeamStickerCard extends StatelessWidget {
       final teamCode = teamCodeFromStickerId(sticker.code);
       final shieldPath = getShieldAssetPath(teamCode);
       if (shieldPath != null) {
+        final badgeCode = sticker.displayCode;
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             Expanded(
               child: Center(
-                child: Image.asset(
-                  shieldPath,
-                  fit: BoxFit.contain,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Opacity(
+                      opacity: 0.10,
+                      child: _buildTeamAsset(shieldPath),
+                    ),
+                    Text(
+                      badgeCode,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: isCollected
+                                ? colors.onPrimary.withValues(alpha: 0.95)
+                                : colors.onSurface.withValues(alpha: 0.82),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -210,7 +229,7 @@ class TeamStickerCard extends StatelessWidget {
     final IconData icon;
     switch (sticker.type) {
       case TeamStickerType.photo:
-        icon = Icons.people_outline;
+        icon = Icons.groups_2_rounded;
         break;
       case TeamStickerType.player:
         icon = Icons.person_outline;
@@ -256,4 +275,18 @@ class TeamStickerCard extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildTeamAsset(String assetPath) {
+    if (assetPath.toLowerCase().endsWith('.svg')) {
+      return SvgPicture.asset(assetPath, fit: BoxFit.contain);
+    }
+    return Image.asset(assetPath, fit: BoxFit.contain);
+  }
+
+  String _headerCode(TeamStickerItem item) {
+    if (item.type != TeamStickerType.badge) return item.displayCode;
+    final parts = item.displayCode.split(RegExp(r'\s+'));
+    return parts.isNotEmpty ? parts.first : item.displayCode;
+  }
+
 }
