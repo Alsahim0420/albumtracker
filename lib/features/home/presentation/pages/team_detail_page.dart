@@ -68,6 +68,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
       final count = _countFor(s);
       return TeamStickerItem(
         code: s.code,
+        displayCode: s.displayCode,
         globalNumber: s.globalNumber,
         label: s.displayLabel,
         name: s.playerName,
@@ -86,6 +87,8 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
         return TeamStickerType.photo;
       case StickerType.player:
         return TeamStickerType.player;
+      case StickerType.special:
+        return TeamStickerType.special;
     }
   }
 
@@ -105,8 +108,40 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
                     count: newCount,
                   ),
                 );
+            if (newCount > count) {
+              _showAddedList([
+                _addedLineForSticker(sticker),
+              ]);
+            }
           }
         },
+      ),
+    );
+  }
+
+  String _addedLineForSticker(StickerModel sticker) {
+    final team = sticker.teamId.tr();
+    switch (sticker.type) {
+      case StickerType.badge:
+        return 'Insignia - $team';
+      case StickerType.team_photo:
+        return 'Foto de equipo - $team';
+      case StickerType.player:
+        final name = (sticker.playerName ?? '').trim();
+        if (name.isNotEmpty) return '$name - $team';
+        return 'Jugador - $team';
+      case StickerType.special:
+        return 'Especial - ${sticker.displayCode}';
+    }
+  }
+
+  void _showAddedList(List<String> lines) {
+    if (!mounted || lines.isEmpty) return;
+    final text = lines.join('\n');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Agregadas:\n$text'),
+        duration: const Duration(seconds: 3),
       ),
     );
   }

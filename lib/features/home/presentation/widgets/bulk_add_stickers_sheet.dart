@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/theme/app_colors.dart';
 
 /// Bottom sheet para agregar múltiples laminas por números (comas o espacios).
@@ -11,8 +12,8 @@ class BulkAddStickersSheet extends StatefulWidget {
     this.onConfirm,
   });
 
-  /// Lista de números únicos parseados. Se llama al pulsar "Confirm & Add".
-  final void Function(List<int> stickerNumbers)? onConfirm;
+  /// Lista de stickerIds únicos resueltos (acepta `POR 11`, `POR-11`, `41`, etc.).
+  final void Function(List<String> stickerIds)? onConfirm;
 
   @override
   State<BulkAddStickersSheet> createState() => _BulkAddStickersSheetState();
@@ -22,8 +23,9 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
-  List<int> _parsedNumbers = [];
-  static final RegExp _numberRegex = RegExp(r'[0-9]+');
+  List<String> _parsedStickerIds = [];
+  static final RegExp _codeRegex = RegExp(r'\b([A-Z]{3})\s*[- ]?\s*(\d{1,2})\b');
+  static final RegExp _numberRegex = RegExp(r'\b\d{1,4}\b');
 
   @override
   void initState() {
@@ -40,15 +42,28 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
   }
 
   void _parseInput() {
-    final text = _controller.text;
-    final matches = _numberRegex.allMatches(text);
-    final numbers = <int>{};
-    for (final m in matches) {
-      final n = int.tryParse(m.group(0)!);
-      if (n != null && n > 0) numbers.add(n);
+    final text = _controller.text.toUpperCase();
+    final ids = <String>{};
+
+    for (final m in _codeRegex.allMatches(text)) {
+      final team = m.group(1);
+      final nRaw = m.group(2);
+      if (team == null || nRaw == null) continue;
+      final n = int.tryParse(nRaw);
+      if (n == null || n < 1 || n > 20) continue;
+      final sticker = WorldCup2026Seed.getStickerByFlexibleIdentifier('$team $n');
+      if (sticker != null) ids.add(sticker.id);
     }
-    if (listEquals(numbers.toList(), _parsedNumbers)) return;
-    setState(() => _parsedNumbers = numbers.toList()..sort());
+
+    for (final m in _numberRegex.allMatches(text)) {
+      final token = m.group(0);
+      if (token == null) continue;
+      final sticker = WorldCup2026Seed.getStickerByFlexibleIdentifier(token);
+      if (sticker != null) ids.add(sticker.id);
+    }
+    final sorted = ids.toList()..sort();
+    if (listEquals(sorted, _parsedStickerIds)) return;
+    setState(() => _parsedStickerIds = sorted);
   }
 
   void _insertShortcut(String char) {
@@ -74,7 +89,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
   }
 
   void _confirm() {
-    widget.onConfirm?.call(List.from(_parsedNumbers));
+    widget.onConfirm?.call(List.from(_parsedStickerIds));
     Navigator.of(context).pop();
   }
 
@@ -88,9 +103,13 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             const SizedBox(height: 12),
             Container(
               width: 40,
@@ -191,7 +210,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                   Padding(
                     padding: const EdgeInsets.only(right: 12, bottom: 8),
                     child: Text(
-                      '${_parsedNumbers.length} ${'bulkAddStickersFound'.tr()}',
+                      '${_parsedStickerIds.length} ${'bulkAddStickersFound'.tr()}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -265,7 +284,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _parsedNumbers.isEmpty ? null : _confirm,
+                      onPressed: _parsedStickerIds.isEmpty ? null : _confirm,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -293,6 +312,7 @@ class _BulkAddStickersSheetState extends State<BulkAddStickersSheet> {
             ),
             const SizedBox(height: 24),
           ],
+          ),
         ),
       ),
     );
