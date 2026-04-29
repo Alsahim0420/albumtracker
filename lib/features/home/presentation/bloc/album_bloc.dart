@@ -1,11 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../domain/use_cases/add_stickers_by_global_numbers_use_case.dart';
+import '../../domain/use_cases/add_stickers_by_sticker_ids_use_case.dart';
 import '../../domain/use_cases/scan_stickers_from_images_use_case.dart';
 import '../../domain/use_cases/get_album_data_use_case.dart';
 import '../../domain/use_cases/update_sticker_count_use_case.dart';
 import '../../domain/use_cases/update_sticker_count_params.dart';
-import '../../domain/use_cases/add_stickers_params.dart';
 import 'package:albumtracker/core/usecase/no_params.dart';
 import 'album_event.dart';
 import 'album_state.dart';
@@ -15,12 +14,11 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
   AlbumBloc({
     required GetAlbumDataUseCase getAlbumDataUseCase,
     required UpdateStickerCountUseCase updateStickerCountUseCase,
-    required AddStickersByGlobalNumbersUseCase
-    addStickersByGlobalNumbersUseCase,
+    required AddStickersByStickerIdsUseCase addStickersByStickerIdsUseCase,
     required ScanStickersFromImagesUseCase scanStickersFromImagesUseCase,
   }) : _getAlbumDataUseCase = getAlbumDataUseCase,
        _updateStickerCountUseCase = updateStickerCountUseCase,
-       _addStickersByGlobalNumbersUseCase = addStickersByGlobalNumbersUseCase,
+       _addStickersByStickerIdsUseCase = addStickersByStickerIdsUseCase,
        _scanStickersFromImagesUseCase = scanStickersFromImagesUseCase,
        super(const AlbumInitial()) {
     on<AlbumLoadRequested>(_onLoadRequested);
@@ -31,7 +29,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
 
   final GetAlbumDataUseCase _getAlbumDataUseCase;
   final UpdateStickerCountUseCase _updateStickerCountUseCase;
-  final AddStickersByGlobalNumbersUseCase _addStickersByGlobalNumbersUseCase;
+  final AddStickersByStickerIdsUseCase _addStickersByStickerIdsUseCase;
   final ScanStickersFromImagesUseCase _scanStickersFromImagesUseCase;
 
   Future<void> _onLoadRequested(
@@ -69,8 +67,8 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     Emitter<AlbumState> emit,
   ) async {
     emit(AlbumLoading(previous: state.albumData));
-    final result = await _addStickersByGlobalNumbersUseCase(
-      AddStickersParams(globalNumbers: event.globalNumbers),
+    final result = await _addStickersByStickerIdsUseCase(
+      AddStickersByStickerIdsParams(stickerIds: event.stickerIds),
     );
     result.fold(
       (failure) => emit(

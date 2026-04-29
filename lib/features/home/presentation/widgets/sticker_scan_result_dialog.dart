@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
+import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/features/home/domain/entities/sticker_scan_result.dart';
 
 /// Diálogo modal con resumen del escaneo (éxito o con incidencias).
@@ -17,17 +19,19 @@ Future<void> showStickerScanResultDialog(
             e.status == StickerScanStatus.alreadyExists,
       )
       .toList();
-  final successfulPlayers = _dedupeSuccessfulPlayers(successfulItems);
+  final successfulStickers = _dedupeSuccessfulStickers(successfulItems);
   final issueItems = result.items
       .where(
         (e) =>
             e.status == StickerScanStatus.notFound ||
             e.status == StickerScanStatus.ocrFailed ||
-            e.status == StickerScanStatus.error,
+            e.status == StickerScanStatus.error ||
+            e.status == StickerScanStatus.needsManualReview,
       )
       .toList();
 
   final uniqueIssueLines = _dedupeIssueLines(issueItems);
+  final showBackSideTip = issueItems.isNotEmpty;
 
   if (!context.mounted) return;
 
@@ -143,19 +147,26 @@ Future<void> showStickerScanResultDialog(
                                     backgroundColor: colors.errorContainer,
                                     foregroundColor: colors.onErrorContainer,
                                   ),
+                                  if (result.needsManualReview > 0)
+                                    _ResultChip(
+                                      label: 'scanResultChipReview'.tr(),
+                                      value: result.needsManualReview,
+                                      backgroundColor: colors.surfaceContainerHighest,
+                                      foregroundColor: colors.onSurface,
+                                    ),
                                 ],
                               ),
-                              if (successfulPlayers.isNotEmpty) ...[
+                              if (successfulStickers.isNotEmpty) ...[
                                 const SizedBox(height: 14),
                                 Text(
-                                  'scanResultDialogPlayersHeader'.tr(),
+                                  'Láminas agregadas',
                                   style: theme.textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                ...successfulPlayers.map(
-                                  (player) => Padding(
+                                ...successfulStickers.map(
+                                  (item) => Padding(
                                     padding: const EdgeInsets.only(bottom: 8),
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +182,7 @@ Future<void> showStickerScanResultDialog(
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            '${player.playerName} — ${player.country}',
+                                            item.line,
                                             style: theme.textTheme.bodyMedium
                                                 ?.copyWith(height: 1.25),
                                           ),
@@ -215,6 +226,37 @@ Future<void> showStickerScanResultDialog(
                                         ),
                                       ],
                                     ),
+                                  ),
+                                ),
+                              ],
+                              if (showBackSideTip) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: colors.surfaceContainerHigh,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.tips_and_updates_outlined,
+                                        size: 18,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'scanResultBackSideTip'.tr(),
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: colors.onSurfaceVariant,
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -317,6 +359,9 @@ String _issueLine(SingleStickerScanResult e) {
       if (e.message == 'scanResultBackNoMatch') {
         return 'scanResultBackNoMatch'.tr();
       }
+      if (e.message == 'scanResultWeAreNoNumber') {
+        return 'scanResultWeAreNoNumber'.tr();
+      }
       return 'scanResultIssueNotFound'.tr(
         namedArgs: {'hint': e.detectedIdentifier ?? '—'},
       );
@@ -324,41 +369,73 @@ String _issueLine(SingleStickerScanResult e) {
       return 'scanResultIssueOcr'.tr();
     case StickerScanStatus.error:
       return 'scanResultIssueError'.tr(namedArgs: {'msg': e.message});
+    case StickerScanStatus.needsManualReview:
+      if (e.message == 'scanResultLowConfidence') {
+        return 'scanResultIssueLowConfidence'.tr(
+          namedArgs: {'hint': e.detectedIdentifier ?? '—'},
+        );
+      }
+      if (e.message == 'scanResultSpecialReview') {
+        return 'scanResultSpecialReview'.tr();
+      }
+      if (e.message == 'scanResultSpecialFrontReview') {
+        return 'scanResultSpecialFrontReview'.tr();
+      }
+      return 'scanResultIssueNotFound'.tr(
+        namedArgs: {'hint': e.detectedIdentifier ?? '—'},
+      );
     case StickerScanStatus.added:
     case StickerScanStatus.alreadyExists:
       return e.message;
   }
 }
 
-class _SuccessfulPlayerLine {
-  const _SuccessfulPlayerLine({
-    required this.playerName,
-    required this.country,
-  });
-
-  final String playerName;
-  final String country;
+class _SuccessfulStickerLine {
+  const _SuccessfulStickerLine({required this.line});
+  final String line;
 }
 
-List<_SuccessfulPlayerLine> _dedupeSuccessfulPlayers(
+List<_SuccessfulStickerLine> _dedupeSuccessfulStickers(
   List<SingleStickerScanResult> successfulItems,
 ) {
-  final out = <_SuccessfulPlayerLine>[];
+  final out = <_SuccessfulStickerLine>[];
   final seen = <String>{};
 
   for (final e in successfulItems) {
     final sticker = e.matchedSticker;
     if (sticker == null) continue;
-
-    final playerName = (sticker.playerName ?? '').trim();
-    if (playerName.isEmpty) continue;
-
-    final country = sticker.teamId.tr();
-    final key = '${sticker.id}|$playerName|$country';
+    final line = _successfulStickerLine(sticker);
+    final key = '${sticker.id}|$line';
     if (!seen.add(key)) continue;
-
-    out.add(_SuccessfulPlayerLine(playerName: playerName, country: country));
+    out.add(_SuccessfulStickerLine(line: line));
   }
 
   return out;
+}
+
+String _successfulStickerLine(StickerModel sticker) {
+  final country = _teamDisplayName(sticker.teamId);
+  switch (sticker.type) {
+    case StickerType.badge:
+      return 'Insignia - $country';
+    case StickerType.team_photo:
+      return 'Foto de equipo - $country';
+    case StickerType.player:
+      final name = (sticker.playerName ?? '').trim();
+      if (name.isNotEmpty) return '$name - $country';
+      return 'Jugador - $country';
+    case StickerType.special:
+      return 'Especial - ${sticker.displayCode}';
+  }
+}
+
+String _teamDisplayName(String teamId) {
+  for (final g in WorldCup2026Seed.groups) {
+    for (final t in g.teams) {
+      if (t.id == teamId) {
+        return t.name.tr();
+      }
+    }
+  }
+  return teamId;
 }

@@ -1,5 +1,6 @@
 import 'package:albumtracker/core/error/failures.dart';
 import 'package:albumtracker/core/usecase/usecase.dart';
+import 'package:albumtracker/features/home/domain/entities/ocr_sticker_detection.dart';
 import 'package:albumtracker/features/home/domain/entities/sticker_scan_image_side.dart';
 import 'package:albumtracker/features/home/domain/entities/sticker_scan_result.dart';
 import 'package:albumtracker/features/home/domain/repositories/album_repository.dart';
@@ -34,14 +35,19 @@ class ScanStickersFromImagesUseCase
     var alreadyOwned = 0;
     var notFound = 0;
     var failed = 0;
+    var needsReview = 0;
 
     for (final imagePath in params.imagePaths) {
       try {
         final pipeline = await _coordinator.processImage(imagePath);
         final stickers = pipeline.matchedStickers;
+        final ocr = pipeline.ocrDetection;
 
-        if (pipeline.side == StickerScanImageSide.unknown) {
-          notFound += 1;
+        if (ocr.type == OcrLogicalStickerType.special) {
+          needsReview += 1;
+          final specialMsg = pipeline.side == StickerScanImageSide.front
+              ? 'scanResultSpecialFrontReview'
+              : 'scanResultSpecialReview';
           items.add(
             SingleStickerScanResult(
               imagePath: imagePath,
@@ -49,9 +55,10 @@ class ScanStickersFromImagesUseCase
               normalizedText: pipeline.normalizedText,
               detectedIdentifier: null,
               matchedSticker: null,
-              status: StickerScanStatus.notFound,
-              message: 'scanResultSideUnknown',
-              imageSide: StickerScanImageSide.unknown,
+              status: StickerScanStatus.needsManualReview,
+              message: specialMsg,
+              imageSide: pipeline.side,
+              ocrDetection: ocr,
             ),
           );
           continue;
@@ -59,6 +66,10 @@ class ScanStickersFromImagesUseCase
 
         if (stickers.isEmpty) {
           notFound += 1;
+          var msg = _emptyMessageForSide(pipeline.side);
+          if (ocr.countryCode != null && ocr.stickerNumber == null) {
+            msg = 'scanResultWeAreNoNumber';
+          }
           items.add(
             SingleStickerScanResult(
               imagePath: imagePath,
@@ -67,12 +78,31 @@ class ScanStickersFromImagesUseCase
               detectedIdentifier: pipeline.detectedHint,
               matchedSticker: null,
               status: StickerScanStatus.notFound,
-              message: pipeline.side == StickerScanImageSide.front
-                  ? 'scanResultFrontNoMatch'
-                  : 'scanResultBackNoMatch',
+              message: msg,
               imageSide: pipeline.side,
+              ocrDetection: ocr,
             ),
           );
+          continue;
+        }
+
+        if (!pipeline.canAutoAdd) {
+          needsReview += stickers.length;
+          for (final sticker in stickers) {
+            items.add(
+              SingleStickerScanResult(
+                imagePath: imagePath,
+                rawText: pipeline.rawText,
+                normalizedText: pipeline.normalizedText,
+                detectedIdentifier: sticker.code,
+                matchedSticker: sticker,
+                status: StickerScanStatus.needsManualReview,
+                message: 'scanResultLowConfidence',
+                imageSide: pipeline.side,
+                ocrDetection: ocr,
+              ),
+            );
+          }
           continue;
         }
 
@@ -93,6 +123,7 @@ class ScanStickersFromImagesUseCase
                 status: StickerScanStatus.error,
                 message: 'Failed to add sticker',
                 imageSide: pipeline.side,
+                ocrDetection: ocr,
               ),
             );
             continue;
@@ -117,6 +148,7 @@ class ScanStickersFromImagesUseCase
                   : StickerScanStatus.added,
               message: wasOwned ? 'Sticker already owned' : 'Sticker added',
               imageSide: pipeline.side,
+              ocrDetection: ocr,
             ),
           );
         }
@@ -132,6 +164,7 @@ class ScanStickersFromImagesUseCase
             status: StickerScanStatus.ocrFailed,
             message: 'OCR failed',
             imageSide: null,
+            ocrDetection: null,
           ),
         );
       }
@@ -144,9 +177,21 @@ class ScanStickersFromImagesUseCase
         alreadyOwned: alreadyOwned,
         notFound: notFound,
         failed: failed,
+        needsManualReview: needsReview,
         items: items,
       ),
     );
+  }
+
+  String _emptyMessageForSide(StickerScanImageSide side) {
+    switch (side) {
+      case StickerScanImageSide.unknown:
+        return 'scanResultSideUnknown';
+      case StickerScanImageSide.front:
+        return 'scanResultFrontNoMatch';
+      case StickerScanImageSide.back:
+        return 'scanResultBackNoMatch';
+    }
   }
 }
 

@@ -1,9 +1,18 @@
 import 'package:equatable/equatable.dart';
 
 import 'package:albumtracker/core/models/sticker_model.dart';
+import 'package:albumtracker/features/home/domain/entities/ocr_sticker_detection.dart';
 import 'package:albumtracker/features/home/domain/entities/sticker_scan_image_side.dart';
 
-enum StickerScanStatus { added, alreadyExists, notFound, ocrFailed, error }
+enum StickerScanStatus {
+  added,
+  alreadyExists,
+  notFound,
+  ocrFailed,
+  error,
+  /// Confianza baja o lámina no resuelta: no se modifica la colección.
+  needsManualReview,
+}
 
 class SingleStickerScanResult extends Equatable {
   const SingleStickerScanResult({
@@ -15,6 +24,7 @@ class SingleStickerScanResult extends Equatable {
     required this.status,
     required this.message,
     this.imageSide,
+    this.ocrDetection,
   });
 
   final String imagePath;
@@ -26,6 +36,7 @@ class SingleStickerScanResult extends Equatable {
   final String message;
   /// Lado inferido (frente/reverso/desconocido); null si falló OCR antes de clasificar.
   final StickerScanImageSide? imageSide;
+  final OcrStickerDetection? ocrDetection;
 
   @override
   List<Object?> get props => [
@@ -37,6 +48,7 @@ class SingleStickerScanResult extends Equatable {
     status,
     message,
     imageSide,
+    ocrDetection,
   ];
 }
 
@@ -47,6 +59,7 @@ class BatchStickerScanResult extends Equatable {
     required this.alreadyOwned,
     required this.notFound,
     required this.failed,
+    required this.needsManualReview,
     required this.items,
   });
 
@@ -55,6 +68,7 @@ class BatchStickerScanResult extends Equatable {
   final int alreadyOwned;
   final int notFound;
   final int failed;
+  final int needsManualReview;
   final List<SingleStickerScanResult> items;
 
   @override
@@ -64,6 +78,7 @@ class BatchStickerScanResult extends Equatable {
     alreadyOwned,
     notFound,
     failed,
+    needsManualReview,
     items,
   ];
 }

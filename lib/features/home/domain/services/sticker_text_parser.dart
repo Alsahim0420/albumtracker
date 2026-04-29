@@ -1,5 +1,5 @@
 /// Extrae identificadores de texto OCR: números globales, códigos tipo `ARG-PL-01`
-/// y códigos de reverso estilo FIFA / Qatar 2022 (`C1`, `F12`, etc.).
+/// y códigos de reverso de ediciones previas (`C1`, `F12`, etc.).
 class StickerTextParser {
   static final RegExp _numericPattern = RegExp(r'\b\d{1,4}\b');
   static final RegExp _alphaNumericPattern = RegExp(

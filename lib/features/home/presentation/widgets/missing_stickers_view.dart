@@ -1,10 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/data/shield_assets.dart';
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
+import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
@@ -115,9 +117,36 @@ class _MissingStickersViewState extends State<MissingStickersView> {
                   count: 1,
                 ),
               );
+          if (context.mounted) {
+            final sticker = WorldCup2026Seed.getStickerById(stickerId);
+            if (sticker != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Agregadas:\n${_addedLineForSticker(sticker)}'),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          }
         },
       ),
     );
+  }
+
+  static String _addedLineForSticker(StickerModel sticker) {
+    final team = sticker.teamId;
+    switch (sticker.type) {
+      case StickerType.badge:
+        return 'Insignia - $team';
+      case StickerType.team_photo:
+        return 'Foto de equipo - $team';
+      case StickerType.player:
+        final name = (sticker.playerName ?? '').trim();
+        if (name.isNotEmpty) return '$name - $team';
+        return 'Jugador - $team';
+      case StickerType.special:
+        return 'Especial - ${sticker.displayCode}';
+    }
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -170,7 +199,13 @@ class _MissingStickersViewState extends State<MissingStickersView> {
     for (final id in ids) {
       set.add(_teamCodeFromStickerId(id));
     }
-    final list = set.toList()..sort();
+    final list = set.toList()
+      ..sort((a, b) {
+        final specialCode = WorldCup2026Seed.specialTeamCode;
+        if (a == specialCode && b != specialCode) return -1;
+        if (b == specialCode && a != specialCode) return 1;
+        return a.compareTo(b);
+      });
     return list;
   }
 
@@ -186,11 +221,13 @@ class _MissingStickersViewState extends State<MissingStickersView> {
 }
 
 String _stickerSubtitleFromId(String stickerId) {
-  if (stickerId.contains('-PL-')) {
+  if (WorldCup2026Seed.isPlayerStickerId(stickerId)) {
     return WorldCup2026Seed.stickerNumberLabel(stickerId);
   }
-  if (stickerId.contains('-B-')) return 'badge'.tr();
-  if (stickerId.contains('-P-')) return 'photo'.tr();
+  if (WorldCup2026Seed.isBadgeStickerId(stickerId)) return 'badge'.tr();
+  if (WorldCup2026Seed.getStickerById(stickerId)?.type == StickerType.team_photo) {
+    return 'photo'.tr();
+  }
   return 'sticker'.tr();
 }
 
@@ -408,7 +445,7 @@ class _MissingStickerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final isBadge = stickerId.contains('-B-');
+    final isBadge = WorldCup2026Seed.isBadgeStickerId(stickerId);
     final teamCode = teamCodeFromStickerId(stickerId);
     final shieldPath = isBadge ? getShieldAssetPath(teamCode) : null;
 
@@ -437,9 +474,9 @@ class _MissingStickerCard extends StatelessWidget {
                 WorldCup2026Seed.stickerCaptionTitle(stickerId),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colors.onSurface,
-                      fontSize: stickerId.contains('-PL-') ? 11 : 10,
-                      fontFamily: stickerId.contains('-PL-') ? null : 'monospace',
-                      fontWeight: stickerId.contains('-PL-') ? FontWeight.w600 : null,
+                      fontSize: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 11 : 10,
+                      fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? null : 'monospace',
+                      fontWeight: WorldCup2026Seed.isPlayerStickerId(stickerId) ? FontWeight.w600 : null,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -448,10 +485,7 @@ class _MissingStickerCard extends StatelessWidget {
               if (isBadge && shieldPath != null)
                 Expanded(
                   child: Center(
-                    child: Image.asset(
-                      shieldPath,
-                      fit: BoxFit.contain,
-                    ),
+                    child: _buildTeamAsset(shieldPath),
                   ),
                 )
               else if (isBadge)
@@ -475,7 +509,7 @@ class _MissingStickerCard extends StatelessWidget {
                         color: colors.onSurfaceVariant,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        fontFamily: stickerId.contains('-PL-') ? 'monospace' : null,
+                        fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 'monospace' : null,
                       ),
                 ),
             ],
@@ -484,6 +518,13 @@ class _MissingStickerCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _buildTeamAsset(String assetPath) {
+  if (assetPath.toLowerCase().endsWith('.svg')) {
+    return SvgPicture.asset(assetPath, fit: BoxFit.contain);
+  }
+  return Image.asset(assetPath, fit: BoxFit.contain);
 }
 
 class _AddOneSheet extends StatelessWidget {
@@ -539,7 +580,7 @@ class _AddOneSheet extends StatelessWidget {
             _stickerSubtitleFromId(stickerId),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: colors.onSurfaceVariant,
-                  fontFamily: stickerId.contains('-PL-') ? 'monospace' : null,
+                  fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 'monospace' : null,
                 ),
           ),
           const SizedBox(height: 24),
