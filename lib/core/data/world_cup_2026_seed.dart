@@ -1536,7 +1536,7 @@ class WorldCup2026Seed {
   'Abdukodir Khusanov',
   'Odiljon Hamrobekov',
   'Otabek Shukurov',
-  'Otabek Shukurov',
+  'Jamshid Iskanderov',
   'Azizbek Turgunboev',
   'Khojimat Erkinov',
   'Eldor Shomurodov',

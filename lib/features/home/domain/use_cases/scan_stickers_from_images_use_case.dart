@@ -86,25 +86,8 @@ class ScanStickersFromImagesUseCase
           continue;
         }
 
-        if (!pipeline.canAutoAdd) {
-          needsReview += stickers.length;
-          for (final sticker in stickers) {
-            items.add(
-              SingleStickerScanResult(
-                imagePath: imagePath,
-                rawText: pipeline.rawText,
-                normalizedText: pipeline.normalizedText,
-                detectedIdentifier: sticker.code,
-                matchedSticker: sticker,
-                status: StickerScanStatus.needsManualReview,
-                message: 'scanResultLowConfidence',
-                imageSide: pipeline.side,
-                ocrDetection: ocr,
-              ),
-            );
-          }
-          continue;
-        }
+        // Modo permisivo: si el pipeline resolvió láminas válidas, se agregan
+        // sin bloquear por umbral de confianza (frente o reverso).
 
         for (final sticker in stickers) {
           final wasOwned = (collection[sticker.id] ?? 0) > 0;

@@ -122,19 +122,54 @@ class StickerOcrResolver {
     }
 
     if (we != null) {
-      final teamPhoto = _teamPhotoStickerByTeam(we);
-      if (teamPhoto != null) {
+      // En collages del frente puede haber varias láminas: jugadores + "WE ARE ...".
+      // Construimos un set combinado para no quedarnos solo con una detección temprana.
+      final byId = <String, StickerModel>{};
+      final front = frontMatcher.matchAllWithCountryInText(rawOcrText);
+      for (final s in front) {
+        byId[s.id] = s;
+      }
+
+      final weCodes = <String>{we};
+      for (final line in rawOcrText.split('\n')) {
+        final normalizedLine = textParser.normalizeRawText(line);
+        final code = weAre.teamCodeFromNormalizedOcr(normalizedLine);
+        if (code != null) {
+          weCodes.add(code);
+        }
+      }
+      for (final code in weCodes) {
+        final teamPhoto = _teamPhotoStickerByTeam(code);
+        if (teamPhoto != null) {
+          byId[teamPhoto.id] = teamPhoto;
+        }
+      }
+
+      if (byId.isNotEmpty) {
+        final resolved = byId.values.toList(growable: false)
+          ..sort((a, b) {
+            final ga = a.globalNumber ?? (1 << 30);
+            final gb = b.globalNumber ?? (1 << 30);
+            final c = ga.compareTo(gb);
+            if (c != 0) return c;
+            return a.id.compareTo(b.id);
+          });
+        final first = resolved.first;
+        final firstNumber = int.tryParse(first.code.split(' ').last) ??
+            first.localNumber ??
+            1;
+        final conf = resolved.length == 1 ? 0.88 : 0.86;
         return StickerOcrFullResult(
           inferredSide: StickerScanImageSide.front,
-          resolvedStickers: [teamPhoto],
+          resolvedStickers: resolved,
           primaryDetection: OcrStickerDetection(
-            countryCode: we,
-            stickerNumber: teamPhoto.localNumber ?? 13,
-            code: teamPhoto.code,
-            type: OcrStickerDetection.fromStickerModelType(teamPhoto.type),
-            confidence: 0.9,
+            countryCode: first.teamId,
+            stickerNumber: firstNumber,
+            code: first.code,
+            type: OcrStickerDetection.fromStickerModelType(first.type),
+            confidence: conf,
             detectionSource: OcrDetectionSource.frontText,
-            needsManualReview: false,
+            needsManualReview: conf < kOcrMinConfidenceToAutoAdd,
           ),
         );
       }
