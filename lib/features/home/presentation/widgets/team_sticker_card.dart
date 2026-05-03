@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:albumtracker/core/data/shield_assets.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
@@ -35,25 +36,34 @@ class TeamStickerCard extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 20, 10),
+              padding: EdgeInsets.fromLTRB(
+                10,
+                10,
+                _trailingPaddingForCard(sticker.type, count),
+                10,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
                 children: [
-                  Text(
-                    'stickerId'.tr(args: [sticker.code]),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isCollected
-                              ? colors.onPrimary.withValues(alpha: 0.9)
-                              : colors.onSurfaceVariant,
-                          fontSize: 11,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
+                  if (sticker.type != TeamStickerType.badge) ...[
+                    Text(
+                      'stickerId'.tr(args: [
+                        _headerCode(sticker),
+                      ]),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isCollected
+                                ? colors.onPrimary.withValues(alpha: 0.9)
+                                : colors.onSurfaceVariant,
+                            fontSize: 11,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   Expanded(
-                    child: _buildCenterContent(context, isCollected),
+                    child: _buildCenterContent(context, isCollected, count),
                   ),
                 ],
               ),
@@ -61,29 +71,7 @@ class TeamStickerCard extends StatelessWidget {
             Positioned(
               right: 8,
               bottom: 8,
-              child: isCollected
-                  ? (count != null && count! > 1)
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: colors.primaryContainer,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '$count',
-                            style:TextStyle(
-                              color: colors.onSurface,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        )
-                      : Icon(Icons.check_circle, color: colors.onSurface, size: 20)
-                  : Icon(
-                      Icons.circle_outlined,
-                      color: colors.onSurfaceVariant.withValues(alpha: 0.6),
-                      size: 20,
-                    ),
+              child: _buildCornerStatus(context, colors, isCollected),
             ),
           ],
         ),
@@ -91,7 +79,66 @@ class TeamStickerCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCenterContent(BuildContext context, bool isCollected) {
+  /// Espacio derecho: si el contador va en línea con el escudo (badge + duplicados), no hace falta reservar tanto.
+  double _trailingPaddingForCard(TeamStickerType type, int? count) {
+    if (type == TeamStickerType.badge && count != null && count > 1) {
+      return 10;
+    }
+    return 20;
+  }
+
+  /// Contador de duplicados en la esquina solo si no va integrado en la fila del badge.
+  Widget _buildCornerStatus(BuildContext context, ColorScheme colors, bool isCollected) {
+    if (!isCollected) {
+      return Icon(
+        Icons.circle_outlined,
+        color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+        size: 20,
+      );
+    }
+    final n = count;
+    if (n != null && n > 1 && sticker.type == TeamStickerType.badge) {
+      return const SizedBox.shrink();
+    }
+    if (n != null && n > 1) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        decoration: BoxDecoration(
+          color: colors.primaryContainer,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          '$n',
+          style: TextStyle(
+            color: colors.onSurface,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+    return Icon(Icons.check_circle, color: colors.onSurface, size: 20);
+  }
+
+  Widget _duplicateChip(BuildContext context, ColorScheme colors, int n) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '$n',
+        style: TextStyle(
+          color: colors.onSurface,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterContent(BuildContext context, bool isCollected, int? count) {
     final colors = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: isCollected ? colors.onPrimary : colors.onSurfaceVariant,
@@ -102,25 +149,52 @@ class TeamStickerCard extends StatelessWidget {
       final teamCode = teamCodeFromStickerId(sticker.code);
       final shieldPath = getShieldAssetPath(teamCode);
       if (shieldPath != null) {
+        final badgeCode = sticker.displayCode;
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             Expanded(
               child: Center(
-                child: Image.asset(
-                  shieldPath,
-                  fit: BoxFit.contain,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Opacity(
+                      opacity: 0.10,
+                      child: _buildTeamAsset(shieldPath),
+                    ),
+                    Text(
+                      badgeCode,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: isCollected
+                                ? colors.onPrimary.withValues(alpha: 0.95)
+                                : colors.onSurface.withValues(alpha: 0.82),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                    ),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              'teamDetailTeamBadge'.tr(),
-              style: textStyle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    'teamDetailTeamBadge'.tr(),
+                    style: textStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                if (count != null && count > 1) ...[
+                  const SizedBox(width: 6),
+                  _duplicateChip(context, colors, count),
+                ],
+              ],
             ),
           ],
         );
@@ -131,12 +205,23 @@ class TeamStickerCard extends StatelessWidget {
         children: [
           Icon(Icons.shield_outlined, size: 28, color: colors.onSurfaceVariant),
           const SizedBox(height: 4),
-          Text(
-            'noShieldAvailable'.tr(),
-            style: textStyle?.copyWith(fontSize: 10),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  'noShieldAvailable'.tr(),
+                  style: textStyle?.copyWith(fontSize: 10),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              if (count != null && count > 1) ...[
+                const SizedBox(width: 6),
+                _duplicateChip(context, colors, count),
+              ],
+            ],
           ),
         ],
       );
@@ -144,7 +229,7 @@ class TeamStickerCard extends StatelessWidget {
     final IconData icon;
     switch (sticker.type) {
       case TeamStickerType.photo:
-        icon = Icons.people_outline;
+        icon = Icons.groups_2_rounded;
         break;
       case TeamStickerType.player:
         icon = Icons.person_outline;
@@ -166,15 +251,6 @@ class TeamStickerCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            'teamDetailNotFound'.tr(),
-            style: textStyle?.copyWith(
-              fontSize: 10,
-              color: colors.onSurfaceVariant,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
         ],
       );
     }
@@ -188,7 +264,9 @@ class TeamStickerCard extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            sticker.name?.tr() ?? sticker.label.tr(),
+            sticker.type == TeamStickerType.player
+                ? (sticker.name ?? sticker.label)
+                : (sticker.name?.tr() ?? sticker.label.tr()),
             style: textStyle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -197,4 +275,18 @@ class TeamStickerCard extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildTeamAsset(String assetPath) {
+    if (assetPath.toLowerCase().endsWith('.svg')) {
+      return SvgPicture.asset(assetPath, fit: BoxFit.contain);
+    }
+    return Image.asset(assetPath, fit: BoxFit.contain);
+  }
+
+  String _headerCode(TeamStickerItem item) {
+    if (item.type != TeamStickerType.badge) return item.displayCode;
+    final parts = item.displayCode.split(RegExp(r'\s+'));
+    return parts.isNotEmpty ? parts.first : item.displayCode;
+  }
+
 }

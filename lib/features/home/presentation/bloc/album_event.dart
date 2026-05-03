@@ -22,15 +22,25 @@ final class AlbumUpdateStickerCountRequested extends AlbumEvent {
   List<Object?> get props => [stickerId, count];
 }
 
-/// Solicita añadir laminas por números globales (bulk add).
+/// Solicita añadir laminas por identificadores de sticker (bulk add).
 final class AlbumBulkAddRequested extends AlbumEvent {
-  const AlbumBulkAddRequested(this.globalNumbers);
+  const AlbumBulkAddRequested(this.stickerIds);
 
-  final Iterable<int> globalNumbers;
+  final Iterable<String> stickerIds;
 
   @override
-  List<Object?> get props => [globalNumbers];
+  List<Object?> get props => [stickerIds];
 }
+
+final class AlbumScanImagesRequested extends AlbumEvent {
+  const AlbumScanImagesRequested(this.imagePaths);
+
+  final List<String> imagePaths;
+
+  @override
+  List<Object?> get props => [imagePaths];
+}
+
 final class AlbumLoadRequested extends AlbumEvent {
   const AlbumLoadRequested();
 

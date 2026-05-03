@@ -62,7 +62,7 @@ class AlbumRepository {
   static Map<String, int> get _collection => hive.collectedStickersMap;
 
   static GlobalAlbumStats getGlobalStats() {
-    final total = WorldCup2026Seed.totalTeamStickers;
+    final total = WorldCup2026Seed.totalAlbumStickers;
     int collected = 0;
     int duplicates = 0;
     for (final entry in _collection.entries) {

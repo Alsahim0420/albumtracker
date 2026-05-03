@@ -63,7 +63,7 @@ class _StickerCountSheetState extends State<StickerCountSheet> {
                   ),
                 ],
               ),
-              _StickerPreviewCard(code: widget.sticker.code, label: widget.sticker.name ?? widget.sticker.label),
+              _StickerPreviewCard(sticker: widget.sticker),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -114,10 +114,16 @@ class _StickerCountSheetState extends State<StickerCountSheet> {
 }
 
 class _StickerPreviewCard extends StatelessWidget {
-  const _StickerPreviewCard({required this.code, required this.label});
+  const _StickerPreviewCard({required this.sticker});
 
-  final String code;
-  final String label;
+  final TeamStickerItem sticker;
+
+  String get _displayLabel {
+    if (sticker.type == TeamStickerType.player) {
+      return sticker.name ?? sticker.label;
+    }
+    return sticker.name?.tr() ?? sticker.label.tr();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +160,9 @@ class _StickerPreviewCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'stickerId'.tr(args: [code]),
+                'stickerId'.tr(args: [
+                  sticker.displayCode,
+                ]),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: colors.onSurface,
                       fontSize: 28,
@@ -163,7 +171,7 @@ class _StickerPreviewCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                label,
+                _displayLabel,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: colors.onSurface.withValues(alpha: 0.95),
                     ),

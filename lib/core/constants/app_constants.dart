@@ -4,7 +4,7 @@ abstract final class AppConstants {
 
   static const String appName = 'Album Collect 2026';
   static const String version = 'v1.0.2';
-  static const String edition = 'WORLD CUP 2026 EDITION';
+  static const String edition = 'FOOTBALL ALBUM 2026 EDITION';
   static const String tagline = 'Made for Collectors';
   static const String versionTagline = '$version • $tagline';
 
@@ -41,7 +41,7 @@ abstract final class AppConstants {
   static const String registerAppBrand = 'ALBUM TRACKER';
   static const String registerTitle = 'Create your account';
   static const String registerSubtitle =
-      'Start tracking your 2026 World Cup collection today. Professional tools for serious collectors.';
+      'Start tracking your 2026 football album collection today. Professional tools for serious collectors.';
   static const String registerFullNameLabel = 'Full Name';
   static const String registerFullNameHint = 'Jude Bellingham';
   static const String registerEmailLabel = 'Email address';
@@ -59,8 +59,8 @@ abstract final class AppConstants {
   static const String registerTermsSuffix = '.';
 
   // --- Home ---
-  static const String homeTitle = 'World Cup 2026';
-  static const String homeSubtitle = 'World Cup 2026';
+  static const String homeTitle = 'Football Album 2026';
+  static const String homeSubtitle = 'International Tournament 2026';
   static const String homeAlbumCollection = 'ALBUM COLLECTION';
   static const String homeTotalCollection = 'TOTAL COLLECTION';
   static const String homeCompleted = 'Completed';
@@ -82,7 +82,7 @@ abstract final class AppConstants {
 
   // --- Team detail ---
   static const String teamDetailBackGroups = 'Groups';
-  static const String teamDetailGroupEvent = '%s • 2026 World Cup';
+  static const String teamDetailGroupEvent = '%s • International Tournament 2026';
   static const String teamDetailCompletionStatus = 'COMPLETION STATUS';
   static const String teamDetailTotal = 'TOTAL';
   static const String teamDetailFound = 'FOUND';
@@ -91,7 +91,7 @@ abstract final class AppConstants {
   static const String teamDetailMissingTab = 'Missing';
   static const String teamDetailDuplicates = 'Duplicates';
   static const String teamDetailSquadMembers = 'SQUAD MEMBERS';
-  static const String teamDetailTeamBadge = 'Team Badge';
+  static const String teamDetailTeamBadge = 'Team Emblem';
   static const String teamDetailTeamPhoto = 'Team Photo';
   static const String teamDetailNotFound = 'Not Found';
   static const String stickerCountDone = 'Listo';
@@ -116,8 +116,6 @@ abstract final class AppConstants {
   static const String settingsStickersCollected = 'Stickers Collected';
   static const String settingsAccount = 'ACCOUNT';
   static const String settingsAccountSettings = 'Account Settings';
-  static const String settingsNotifications = 'Notifications';
-  static const String settingsNotificationsOn = 'On';
   static const String settingsPrivacySecurity = 'Privacy & Security';
   static const String settingsCollectionData = 'COLLECTION DATA';
   static const String settingsExportData = 'Export Data';

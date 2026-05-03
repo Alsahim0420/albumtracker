@@ -5,21 +5,17 @@ import 'package:flutter/material.dart';
 /// Índice de la pestaña inferior.
 enum HomeNavItem { album, repeated, missing, settings }
 
-/// Barra inferior con pestañas y FAB.
+/// Barra inferior con pestañas. El FAB (+) va en [Scaffold.floatingActionButton]
+/// para que el hit-test no quede detrás del listado.
 class HomeBottomNav extends StatelessWidget {
   const HomeBottomNav({
     super.key,
     required this.currentIndex,
     this.onTap,
-    this.onFabTap,
-    this.showFab = true,
   });
 
   final HomeNavItem currentIndex;
   final ValueChanged<HomeNavItem>? onTap;
-  final VoidCallback? onFabTap;
-  /// Si false, no se muestra el FAB (ej. en Settings).
-  final bool showFab;
 
   @override
   Widget build(BuildContext context) {
@@ -39,38 +35,32 @@ class HomeBottomNav extends StatelessWidget {
         top: false,
         child: SizedBox(
           height: 64,
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _NavTile(
-                    icon: Icons.grid_view_rounded,
-                    label: 'homeNavAlbum'.tr(),
-                    isSelected: currentIndex == HomeNavItem.album,
-                    onTap: () => onTap?.call(HomeNavItem.album),
-                  ),
-                  _NavTile(
-                    icon: Icons.copy_rounded,
-                    label: 'homeNavRepeated'.tr(),
-                    isSelected: currentIndex == HomeNavItem.repeated,
-                    onTap: () => onTap?.call(HomeNavItem.repeated),
-                  ),
-                  _NavTile(
-                    icon: Icons.playlist_add_rounded,
-                    label: 'homeFilterMissing'.tr(),
-                    isSelected: currentIndex == HomeNavItem.missing,
-                    onTap: () => onTap?.call(HomeNavItem.missing),
-                  ),
-                  _NavTile(
-                    icon: Icons.settings_outlined,
-                    label: 'homeNavSettings'.tr(),
-                    isSelected: currentIndex == HomeNavItem.settings,
-                    onTap: () => onTap?.call(HomeNavItem.settings),
-                  ),
-                ],
+              _NavTile(
+                icon: Icons.grid_view_rounded,
+                label: 'homeNavAlbum'.tr(),
+                isSelected: currentIndex == HomeNavItem.album,
+                onTap: () => onTap?.call(HomeNavItem.album),
+              ),
+              _NavTile(
+                icon: Icons.copy_rounded,
+                label: 'homeNavRepeated'.tr(),
+                isSelected: currentIndex == HomeNavItem.repeated,
+                onTap: () => onTap?.call(HomeNavItem.repeated),
+              ),
+              _NavTile(
+                icon: Icons.playlist_add_rounded,
+                label: 'homeFilterMissing'.tr(),
+                isSelected: currentIndex == HomeNavItem.missing,
+                onTap: () => onTap?.call(HomeNavItem.missing),
+              ),
+              _NavTile(
+                icon: Icons.settings_outlined,
+                label: 'homeNavSettings'.tr(),
+                isSelected: currentIndex == HomeNavItem.settings,
+                onTap: () => onTap?.call(HomeNavItem.settings),
               ),
             ],
           ),

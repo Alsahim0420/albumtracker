@@ -40,4 +40,16 @@ class AlbumRepositoryImpl implements AlbumRepository {
       return Left(DatabaseFailure());
     }
   }
+
+  @override
+  Future<Either<Failure, void>> addStickersByStickerIds(
+    Iterable<String> stickerIds,
+  ) async {
+    try {
+      await localDataSource.addStickersByStickerIds(stickerIds);
+      return const Right(null);
+    } catch (_) {
+      return Left(DatabaseFailure());
+    }
+  }
 }

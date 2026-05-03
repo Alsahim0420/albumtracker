@@ -7,6 +7,7 @@ import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/models/team_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:albumtracker/core/i18n/group_localization.dart';
 import 'package:albumtracker/core/repository/album_repository.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
@@ -67,6 +68,8 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
       final count = _countFor(s);
       return TeamStickerItem(
         code: s.code,
+        displayCode: s.displayCode,
+        globalNumber: s.globalNumber,
         label: s.displayLabel,
         name: s.playerName,
         type: _stickerType(s.type),
@@ -84,6 +87,8 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
         return TeamStickerType.photo;
       case StickerType.player:
         return TeamStickerType.player;
+      case StickerType.special:
+        return TeamStickerType.special;
     }
   }
 
@@ -103,8 +108,40 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
                     count: newCount,
                   ),
                 );
+            if (newCount > count) {
+              _showAddedList([
+                _addedLineForSticker(sticker),
+              ]);
+            }
           }
         },
+      ),
+    );
+  }
+
+  String _addedLineForSticker(StickerModel sticker) {
+    final team = sticker.teamId.tr();
+    switch (sticker.type) {
+      case StickerType.badge:
+        return 'Insignia - $team';
+      case StickerType.team_photo:
+        return 'Foto de equipo - $team';
+      case StickerType.player:
+        final name = (sticker.playerName ?? '').trim();
+        if (name.isNotEmpty) return '$name - $team';
+        return 'Jugador - $team';
+      case StickerType.special:
+        return 'Especial - ${sticker.displayCode}';
+    }
+  }
+
+  void _showAddedList(List<String> lines) {
+    if (!mounted || lines.isEmpty) return;
+    final text = lines.join('\n');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Agregadas:\n$text'),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -164,7 +201,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _TeamHeader(
-                  teamName: team.name,
+                  teamName: team.name.tr(),
                   groupName: widget.groupName,
                   flagAssetPath: team.flagAssetPath ?? '',
                 ),
@@ -287,7 +324,9 @@ class _TeamHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'teamDetailGroupEvent'.tr(args: [groupName]),
+                  'teamDetailGroupEvent'.tr(
+                    args: [localizedGroupDisplayName(groupName)],
+                  ),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

@@ -35,10 +35,15 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
   List<TeamModel> get _teams =>
       WorldCup2026Seed.groups.expand((g) => g.teams).toList();
 
-  List<TeamModel> get _filteredTeams {
+  List<TeamModel> _filteredTeams(BuildContext context) {
     final q = _searchController.text.trim().toLowerCase();
     if (q.isEmpty) return _teams;
-    return _teams.where((t) => t.name.toLowerCase().contains(q)).toList();
+    return _teams.where((t) {
+      final id = t.id.toLowerCase();
+      final en = t.name.toLowerCase();
+      final loc = context.tr(t.name).toLowerCase();
+      return id.contains(q) || en.contains(q) || loc.contains(q);
+    }).toList();
   }
 
   @override
@@ -218,7 +223,7 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ..._filteredTeams.map((team) {
+                      ..._filteredTeams(context).map((team) {
                         final isSelected = _selectedTeamId == team.id;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
@@ -239,11 +244,14 @@ class _PersonalizationPageState extends State<PersonalizationPage> {
                                 ),
                                 child: Row(
                                   children: [
-                                    _TeamFlagCircle(team: team),
+                                    _TeamFlagCircle(
+                                      team: team,
+                                      labelForInitial: context.tr(team.name),
+                                    ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        team.name,
+                                        context.tr(team.name),
                                         style: theme.textTheme.bodyLarge?.copyWith(
                                           color: colors.onSurface,
                                           fontWeight: isSelected
@@ -350,9 +358,14 @@ class _SectionTitle extends StatelessWidget {
 
 /// Mismas dimensiones que en la vista de detalle del equipo (team_detail_page).
 class _TeamFlagCircle extends StatelessWidget {
-  const _TeamFlagCircle({required this.team});
+  const _TeamFlagCircle({
+    required this.team,
+    required this.labelForInitial,
+  });
 
   final TeamModel team;
+  /// Inicial mostrada si no hay bandera (ej. nombre localizado).
+  final String labelForInitial;
 
   static const double _flagWidth = 48;
   static const double _flagHeight = 36;
@@ -380,7 +393,7 @@ class _TeamFlagCircle extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: Text(
-          team.name.isNotEmpty ? team.name.substring(0, 1) : '?',
+          labelForInitial.isNotEmpty ? labelForInitial.substring(0, 1).toUpperCase() : '?',
           style: TextStyle(
             color: colors.onSurfaceVariant,
             fontWeight: FontWeight.bold,

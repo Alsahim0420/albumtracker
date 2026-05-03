@@ -1,9 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/data/shield_assets.dart';
+import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
+import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
@@ -162,7 +165,13 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
     for (final e in entries) {
       set.add(_teamCodeFromStickerId(e.key));
     }
-    final list = set.toList()..sort();
+    final list = set.toList()
+      ..sort((a, b) {
+        final specialCode = WorldCup2026Seed.specialTeamCode;
+        if (a == specialCode && b != specialCode) return -1;
+        if (b == specialCode && a != specialCode) return 1;
+        return a.compareTo(b);
+      });
     return list;
   }
 
@@ -392,11 +401,15 @@ class _FilterListTile extends StatelessWidget {
   }
 }
 
-/// Subtitle derived from stickerId: B=Badge, P=Photo, PL=Player.
+/// Subtítulo en tarjeta (no badge): PL-* muestra el número global; resto tipo de lámina.
 String _stickerSubtitleFromId(String stickerId) {
-  if (stickerId.contains('-PL-')) return 'player'.tr();
-  if (stickerId.contains('-B-')) return 'badge'.tr();
-  if (stickerId.contains('-P-')) return 'photo'.tr();
+  if (WorldCup2026Seed.isPlayerStickerId(stickerId)) {
+    return WorldCup2026Seed.stickerNumberLabel(stickerId);
+  }
+  if (WorldCup2026Seed.isBadgeStickerId(stickerId)) return 'badge'.tr();
+  if (WorldCup2026Seed.getStickerById(stickerId)?.type == StickerType.team_photo) {
+    return 'photo'.tr();
+  }
   return 'sticker'.tr();
 }
 
@@ -416,7 +429,7 @@ class _RepeatedStickerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final isBadge = stickerId.contains('-B-');
+    final isBadge = WorldCup2026Seed.isBadgeStickerId(stickerId);
     final teamCode = teamCodeFromStickerId(stickerId);
     final shieldPath = isBadge ? getShieldAssetPath(teamCode) : null;
 
@@ -444,11 +457,12 @@ class _RepeatedStickerCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.max,
                 children: [
                   Text(
-                    'stickerId'.tr(args: [stickerId]),
+                    WorldCup2026Seed.stickerCaptionTitle(stickerId),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.onSurface,
-                          fontSize: 10,
-                          fontFamily: 'monospace',
+                          fontSize: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 11 : 10,
+                          fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? null : 'monospace',
+                          fontWeight: WorldCup2026Seed.isPlayerStickerId(stickerId) ? FontWeight.w600 : null,
                         ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -457,10 +471,7 @@ class _RepeatedStickerCard extends StatelessWidget {
                   if (isBadge && shieldPath != null)
                     Expanded(
                       child: Center(
-                        child: Image.asset(
-                          shieldPath,
-                          fit: BoxFit.contain,
-                        ),
+                        child: _buildTeamAsset(shieldPath),
                       ),
                     )
                   else if (isBadge)
@@ -484,6 +495,7 @@ class _RepeatedStickerCard extends StatelessWidget {
                             color: colors.onSurfaceVariant,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
+                            fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 'monospace' : null,
                           ),
                     ),
                 ],
@@ -573,7 +585,7 @@ class _CountSheet extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'stickerId'.tr(args: [stickerId]),
+                WorldCup2026Seed.stickerCaptionTitle(stickerId),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: colors.onSurface,
                       fontWeight: FontWeight.w600,
@@ -583,6 +595,7 @@ class _CountSheet extends StatelessWidget {
                 _stickerSubtitleFromId(stickerId),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
+                      fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 'monospace' : null,
                     ),
               ),
               const SizedBox(height: 24),
@@ -612,6 +625,27 @@ class _CountSheet extends StatelessWidget {
                     icon: Icons.add_rounded,
                     onPressed: () async {
                       await onSetCount(count + 1);
+                      if (context.mounted) {
+                        final sticker = WorldCup2026Seed.getStickerById(stickerId);
+                        if (sticker != null) {
+                          final team = sticker.teamId;
+                          final line = switch (sticker.type) {
+                            StickerType.badge => 'Insignia - $team',
+                            StickerType.team_photo => 'Foto de equipo - $team',
+                            StickerType.player =>
+                              ((sticker.playerName ?? '').trim().isNotEmpty)
+                                  ? '${sticker.playerName!.trim()} - $team'
+                                  : 'Jugador - $team',
+                            StickerType.special => 'Especial - ${sticker.displayCode}',
+                          };
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Agregadas:\n$line'),
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      }
                     },
                   ),
                 ],
@@ -622,6 +656,13 @@ class _CountSheet extends StatelessWidget {
       },
     );
   }
+}
+
+Widget _buildTeamAsset(String assetPath) {
+  if (assetPath.toLowerCase().endsWith('.svg')) {
+    return SvgPicture.asset(assetPath, fit: BoxFit.contain);
+  }
+  return Image.asset(assetPath, fit: BoxFit.contain);
 }
 
 class _SheetButton extends StatelessWidget {

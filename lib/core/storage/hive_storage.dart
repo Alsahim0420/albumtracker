@@ -10,6 +10,7 @@ abstract final class PreferencesKeys {
   static const String userName = 'userName';
   static const String favoriteTeam = 'favoriteTeam';
   static const String profileColorHex = 'profileColorHex';
+
   /// 'light' | 'dark' | 'system'
   static const String themeMode = 'themeMode';
 }
@@ -105,7 +106,9 @@ Box get collectionBox => Hive.box(kCollectionBoxName);
 Map<String, int> get collectedStickersMap {
   final raw = collectionBox.get(kCollectedStickersKey);
   if (raw is Map) {
-    return Map<String, int>.from(raw.map((k, v) => MapEntry(k.toString(), v is int ? v : 0)));
+    return Map<String, int>.from(
+      raw.map((k, v) => MapEntry(k.toString(), v is int ? v : 0)),
+    );
   }
   return {};
 }
@@ -134,6 +137,17 @@ Future<void> addStickersByGlobalNumbers(Iterable<int> globalNumbers) async {
     if (sticker != null) {
       map[sticker.id] = (map[sticker.id] ?? 0) + 1;
     }
+  }
+  await saveCollectedStickersMap(map);
+}
+
+/// Añade láminas por identificador flexible de sticker (id/código interno).
+Future<void> addStickersByStickerIds(Iterable<String> stickerIds) async {
+  final map = Map<String, int>.from(collectedStickersMap);
+  for (final id in stickerIds) {
+    final normalized = id.trim();
+    if (normalized.isEmpty) continue;
+    map[normalized] = (map[normalized] ?? 0) + 1;
   }
   await saveCollectedStickersMap(map);
 }
