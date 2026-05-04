@@ -59,7 +59,10 @@ class FrontStickerMatcher {
     final byId = <String, StickerModel>{};
 
     // 1) Match fuerte por nombre completo en todo el blob OCR.
-    final strict = PlayerNameOcrFuzzy.findPlayerStickersForOcrBlob(scrubbed);
+    final strict = PlayerNameOcrFuzzy.findPlayerStickersForOcrBlob(
+      scrubbed,
+      onNameFuzzyReject: StickerMatcherService.logRejectedMatch,
+    );
     for (final s in strict) {
       byId[s.id] = s;
     }
@@ -147,6 +150,12 @@ class FrontStickerMatcher {
           return false;
         });
         if (!hasStrongSurnameHit) continue;
+        if (!PlayerNameOcrFuzzy.sharedSurnameBlobHasExactGivenNames(
+          player,
+          normalizedBlob,
+        )) {
+          continue;
+        }
 
         byId[player.id] = player;
       }
@@ -270,6 +279,21 @@ class FrontStickerMatcher {
         .toList();
     if (nameWords.isEmpty || lineWords.isEmpty) return 0;
 
+    final strongTok = PlayerNameOcrFuzzy.strongTokensNormalized(playerName);
+    final lineWordSet = lineWords.toSet();
+    final fullSim = _normalizedSimilarity(playerName, line);
+    final hasFullNameEvidence = line.contains(playerName) || fullSim >= 0.95;
+    if (!hasFullNameEvidence &&
+        strongTok.length >= 2 &&
+        PlayerNameOcrFuzzy.isSharedLastStrongSurnameToken(strongTok.last)) {
+      final given = strongTok
+          .sublist(0, strongTok.length - 1)
+          .where((g) => g.length >= 3)
+          .toList(growable: false);
+      if (given.isEmpty) return 0;
+      if (!given.every(lineWordSet.contains)) return 0;
+    }
+
     var strongHits = 0;
     var mediumHits = 0;
     var bestSingleToken = 0.0;
@@ -297,7 +321,6 @@ class FrontStickerMatcher {
 
     final coverage = strongHits / nameWords.length;
     final avgSim = simSum / nameWords.length;
-    final fullSim = _normalizedSimilarity(playerName, line);
 
     double score = 0.0;
     if (line.contains(playerName) || fullSim >= 0.95) {

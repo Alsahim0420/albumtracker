@@ -7,6 +7,65 @@ import 'package:flutter/foundation.dart';
 class PlayerNameOcrFuzzy {
   PlayerNameOcrFuzzy._();
 
+  static Set<String>? _sharedLastStrongSurnames;
+
+  /// Apellido “fuerte” final compartido por ≥2 jugadores en el seed (p. ej. pašalić).
+  static void _ensureSharedLastStrongSurnames() {
+    if (_sharedLastStrongSurnames != null) return;
+    final counts = <String, int>{};
+    for (final g in WorldCup2026Seed.groups) {
+      for (final t in g.teams) {
+        for (final sticker in t.stickers) {
+          if (sticker.type != StickerType.player) continue;
+          final key = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
+            sticker.playerName ?? '',
+          );
+          final strong = _strongTokens(key);
+          if (strong.isEmpty) continue;
+          final last = strong.last;
+          if (last.length < 3) continue;
+          counts[last] = (counts[last] ?? 0) + 1;
+        }
+      }
+    }
+    _sharedLastStrongSurnames = {
+      for (final e in counts.entries)
+        if (e.value >= 2) e.key,
+    };
+  }
+
+  static bool isSharedLastStrongSurnameToken(String normalizedLastStrongSurname) {
+    _ensureSharedLastStrongSurnames();
+    return _sharedLastStrongSurnames!.contains(normalizedLastStrongSurname);
+  }
+
+  /// Tokens fuertes ya [WorldCup2026Seed.normalizeTextForPlayerNameMatch].
+  static List<String> strongTokensNormalized(String normalizedPlayerName) =>
+      _strongTokens(normalizedPlayerName);
+
+  /// Si el apellido final es compartido, cada nombre de pila fuerte debe aparecer
+  /// como palabra exacta en [normalizedBlob] (misma normalización que el OCR).
+  static bool sharedSurnameBlobHasExactGivenNames(
+    StickerModel player,
+    String normalizedBlob,
+  ) {
+    if (player.type != StickerType.player) return true;
+    final key = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
+      player.playerName ?? '',
+    );
+    final strong = _strongTokens(key);
+    if (strong.length < 2) return true;
+    final last = strong.last;
+    if (!isSharedLastStrongSurnameToken(last)) return true;
+    final given = strong
+        .sublist(0, strong.length - 1)
+        .where((t) => t.length >= 3)
+        .toList();
+    if (given.isEmpty) return false;
+    final words = normalizedBlob.split(' ').where((w) => w.isNotEmpty).toSet();
+    return given.every(words.contains);
+  }
+
   /// Conectores / partículas que no bastan solos para matchear.
   static const Set<String> _weakTokens = {
     'el', 'de', 'da', 'dos', 'van', 'al', 'del', 'la', 'le', 'il', 'et', 'und',
@@ -15,7 +74,10 @@ class PlayerNameOcrFuzzy {
   };
 
   /// Coincidencia exacta (substring) + fuzzy conservador por tokens.
-  static List<StickerModel> findPlayerStickersForOcrBlob(String rawOcrText) {
+  static List<StickerModel> findPlayerStickersForOcrBlob(
+    String rawOcrText, {
+    void Function(String stickerId, String reason)? onNameFuzzyReject,
+  }) {
     final exact = WorldCup2026Seed.findStickersByPlayerNamesInText(rawOcrText);
     final blob = WorldCup2026Seed.normalizeTextForPlayerNameMatch(rawOcrText);
     if (blob.length < 4) return exact;
@@ -31,7 +93,12 @@ class PlayerNameOcrFuzzy {
             sticker.playerName ?? '',
           );
           if (key.length < 4 || blob.contains(key)) continue;
-          final match = _evaluateFuzzyMatch(sticker, blob, emitDebugLog: kDebugMode);
+          final match = _evaluateFuzzyMatch(
+            sticker,
+            blob,
+            emitDebugLog: kDebugMode,
+            onReject: onNameFuzzyReject,
+          );
           if (match != null) {
             byId[sticker.id] = sticker;
           }
@@ -47,13 +114,20 @@ class PlayerNameOcrFuzzy {
         6) {
       return false;
     }
-    return _evaluateFuzzyMatch(player, normalizedBlob, emitDebugLog: false) != null;
+    return _evaluateFuzzyMatch(
+          player,
+          normalizedBlob,
+          emitDebugLog: false,
+          onReject: null,
+        ) !=
+        null;
   }
 
   static _FuzzyMatchDetail? _evaluateFuzzyMatch(
     StickerModel sticker,
     String blob, {
     required bool emitDebugLog,
+    void Function(String stickerId, String reason)? onReject,
   }) {
     final playerNorm =
         WorldCup2026Seed.normalizeTextForPlayerNameMatch(sticker.playerName ?? '');
@@ -62,6 +136,9 @@ class PlayerNameOcrFuzzy {
 
     if (strong.length == 1) {
       final t = strong.first;
+      if (isSharedLastStrongSurnameToken(t)) {
+        return null;
+      }
       if (t.length < 6) return null;
       final best = _bestTokenVsCandidates(t, _ocrCandidates(blob));
       if (best.score >= 0.92) {
@@ -80,23 +157,49 @@ class PlayerNameOcrFuzzy {
     final primary = strong.last;
     final others = strong.sublist(0, strong.length - 1);
     final cands = _ocrCandidates(blob);
+    final blobWords = blob.split(' ').where((w) => w.isNotEmpty).toSet();
+    final surnameShared = isSharedLastStrongSurnameToken(primary);
 
     final primaryBest = _bestTokenVsCandidates(primary, cands);
     if (primaryBest.score < 0.84) return null;
 
     var secondaryOk = false;
     _ScoreTriplet? secondaryBest;
-    for (final o in others) {
-      if (o.length < 3) continue;
-      final b = _bestTokenVsCandidates(o, cands);
-      if (b.score >= 0.76) {
-        secondaryOk = true;
-        if (secondaryBest == null || b.score > secondaryBest.score) {
-          secondaryBest = b;
+    if (surnameShared) {
+      final givenNeedExact =
+          others.where((o) => o.length >= 3).toList(growable: false);
+      if (givenNeedExact.isEmpty) {
+        return null;
+      }
+      for (final o in givenNeedExact) {
+        if (blobWords.contains(o)) {
+          secondaryOk = true;
+          secondaryBest ??= _ScoreTriplet(o, 1.0);
+          continue;
+        }
+        final b = _bestTokenVsCandidates(o, cands);
+        if (b.score >= 0.76) {
+          onReject?.call(
+            sticker.id,
+            'shared surname "$primary" requires exact first-name match; '
+            'OCR first name "${b.raw}" != seed first name "$o"',
+          );
+        }
+        return null;
+      }
+    } else {
+      for (final o in others) {
+        if (o.length < 3) continue;
+        final b = _bestTokenVsCandidates(o, cands);
+        if (b.score >= 0.76) {
+          secondaryOk = true;
+          if (secondaryBest == null || b.score > secondaryBest.score) {
+            secondaryBest = b;
+          }
         }
       }
+      if (!secondaryOk) return null;
     }
-    if (!secondaryOk) return null;
 
     final detail = _FuzzyMatchDetail(
       rawOcrToken: '${primaryBest.raw}|${secondaryBest?.raw ?? ''}',

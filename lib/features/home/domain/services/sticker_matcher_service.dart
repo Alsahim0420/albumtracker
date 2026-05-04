@@ -194,6 +194,7 @@ class StickerMatcherService {
     if (rawOcrText != null && rawOcrText.isNotEmpty) {
       for (final sticker in PlayerNameOcrFuzzy.findPlayerStickersForOcrBlob(
         rawOcrText,
+        onNameFuzzyReject: logRejectedMatch,
       )) {
         byId[sticker.id] = sticker;
       }
