@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/features/home/domain/services/ocr/player_name_ocr_fuzzy_match.dart';
@@ -31,7 +33,14 @@ class FrontStickerMatcher {
 
   static Map<String, int>? _tokenFrequencyAcrossPlayers;
 
-  /// Todas las láminas distintas detectables en el texto.
+  /// Solo debug: rechazos de monónimos cortos (Rodri vs RODR de Rodríguez).
+  final List<String> _shortAliasRejectLog = <String>[];
+
+  /// Evita repetir el mismo motivo de equipo por jugador en un mismo [matchAll].
+  final Set<String> _shortAliasTeamRejectLoggedIds = <String>{};
+
+  /// Todas las láminas detectables en el texto (puede repetir el mismo id si varias
+  /// líneas OCR matchean la misma lámina, p. ej. dos ejemplares en una foto).
   ///
   /// Si el OCR incluye varios jugadores del **mismo** equipo pero **no** lee el código
   /// código de equipo (NED, ARG…), se confía en el consenso de nombres y no se exige `NED` en texto.
@@ -52,22 +61,31 @@ class FrontStickerMatcher {
     );
     if (normalizedBlob.isEmpty) return [];
 
+    if (kDebugMode) {
+      _shortAliasRejectLog.clear();
+      _shortAliasTeamRejectLoggedIds.clear();
+    }
+
     _ensureTokenFrequencyAcrossPlayers();
     final teamHints = _buildTeamHints(scrubbed);
     final players = _allPlayerStickers();
     final lines = _extractCandidateLines(scrubbed);
-    final byId = <String, StickerModel>{};
+    final ordered = <StickerModel>[];
 
-    // 1) Match fuerte por nombre completo en todo el blob OCR.
+    // Salida final = [ordered] (ocurrencias físicas, orden de lectura). Los Maps/Sets
+    // solo sirven para expansión interna, nunca para colapsar la lista final.
+
+    // 1) Strict: solo pistas (jugadores presentes en el blob); puede ser < ocurrencias.
     final strict = PlayerNameOcrFuzzy.findPlayerStickersForOcrBlob(
       scrubbed,
       onNameFuzzyReject: StickerMatcherService.logRejectedMatch,
     );
-    for (final s in strict) {
-      byId[s.id] = s;
-    }
 
-    // 2) Match flexible por línea OCR: umbral + diferencia top1 vs top2.
+    final multiLineScan = lines.length >= 6;
+    final lineThreshold = multiLineScan ? 0.82 : _autoAddThreshold;
+    final lineDeltaMin = multiLineScan ? 0.08 : _topDeltaThreshold;
+
+    // 2) Una entrada en [ordered] por línea con match claro (mismo id puede repetirse).
     for (final line in lines) {
       final ranked = <_ScoredCandidate>[];
       for (final player in players) {
@@ -85,47 +103,53 @@ class FrontStickerMatcher {
       final top = ranked.first;
       final second = ranked.length > 1 ? ranked[1] : null;
       final delta = second == null ? 1.0 : (top.score - second.score);
-      if (top.score >= _autoAddThreshold && delta >= _topDeltaThreshold) {
-        byId[top.player.id] = top.player;
+      final wellSeparated = delta >= lineDeltaMin;
+      final highConfidence = top.score >= 0.905;
+      if (top.score >= lineThreshold && (wellSeparated || highConfidence)) {
+        ordered.add(top.player);
       }
     }
 
-    // 3) Consenso de equipo (si hay >=2 del mismo team): sumar candidatos cercanos.
-    final teamCounts = <String, int>{};
-    for (final s in byId.values) {
-      teamCounts.update(s.teamId, (v) => v + 1, ifAbsent: () => 1);
+    final afterLinePassCount = ordered.length;
+
+    // 3) Consenso: ids ya vistos al menos una vez (no bloquea repetir en paso 2; solo
+    // evita meter el mismo jugador otra vez desde *esta* expansión si ya hay una fila).
+    var foundIds = ordered.map((s) => s.id).toSet();
+    final idsPerTeam = <String, Set<String>>{};
+    for (final s in ordered) {
+      idsPerTeam.putIfAbsent(s.teamId, () => {}).add(s.id);
     }
-    final consensusTeams = teamCounts.entries
-        .where((e) => e.value >= 2)
+    final consensusTeams = idsPerTeam.entries
+        .where((e) => e.value.length >= 2)
         .map((e) => e.key)
         .toSet();
     if (!requireExplicitFullPlayerNameInBlob && consensusTeams.isNotEmpty) {
       for (final line in lines) {
         for (final player in players.where(
-          (p) => consensusTeams.contains(p.teamId) && !byId.containsKey(p.id),
+          (p) => consensusTeams.contains(p.teamId) && !foundIds.contains(p.id),
         )) {
           final score = _scorePlayerLineMatch(
             line: line,
             player: player,
             teamHints: teamHints,
           );
-          if (score >= (_autoAddThreshold - 0.05)) {
-            byId[player.id] = player;
+          if (score >= (lineThreshold - 0.05)) {
+            ordered.add(player);
+            foundIds.add(player.id);
           }
         }
       }
     }
 
-    // 4) Fallback de collage: si ya hubo varias detecciones, permitir agregar
-    // jugadores por apellido largo/único detectado en el bloque OCR global.
-    // Esto cubre OCR tipo "GUARDIOL" vs "GVARDIOL".
-    if (!requireExplicitFullPlayerNameInBlob && byId.length >= 4) {
+    // 4) Fallback collage por apellido en el blob.
+    foundIds = ordered.map((s) => s.id).toSet();
+    if (!requireExplicitFullPlayerNameInBlob && foundIds.length >= 4) {
       final blobWords = normalizedBlob
           .split(' ')
           .where((w) => w.length >= 4)
           .toSet()
           .toList(growable: false);
-      for (final player in players.where((p) => !byId.containsKey(p.id))) {
+      for (final player in players.where((p) => !foundIds.contains(p.id))) {
         final playerName = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
           player.playerName ?? '',
         );
@@ -157,24 +181,74 @@ class FrontStickerMatcher {
           continue;
         }
 
-        byId[player.id] = player;
+        ordered.add(player);
+        foundIds.add(player.id);
       }
     }
 
+    for (final s in strict) {
+      if (!ordered.any((x) => x.id == s.id)) {
+        ordered.add(s);
+      }
+    }
+
+    final wordList = normalizedBlob
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList(growable: false);
+
+    List<StickerModel>? greedyResult;
+    if (wordList.length >= 8 &&
+        !requireExplicitFullPlayerNameInBlob &&
+        players.isNotEmpty) {
+      final greedyPool = _greedyCandidatePlayers(strict, players, teamHints);
+      if (greedyPool.isNotEmpty) {
+        final greedyMinScore =
+            (multiLineScan || wordList.length >= 12) ? 0.82 : _autoAddThreshold;
+        greedyResult = _greedyPlayerSpansFromWords(
+          wordList,
+          greedyPool,
+          teamHints,
+          minScore: greedyMinScore,
+        );
+      }
+    }
+
+    if (greedyResult != null && greedyResult.length > ordered.length) {
+      ordered
+        ..clear()
+        ..addAll(greedyResult);
+    }
+
     if (requireExplicitFullPlayerNameInBlob) {
-      byId.removeWhere(
-        (_, s) => !StickerMatcherService.playerHasExplicitNameEvidence(s, scrubbed),
+      ordered.removeWhere(
+        (s) => !StickerMatcherService.playerHasExplicitNameEvidence(s, scrubbed),
       );
     }
 
-    final out = byId.values.toList(growable: false);
-    out.sort((a, b) {
-      final ga = a.globalNumber ?? 1 << 30;
-      final gb = b.globalNumber ?? 1 << 30;
-      final c = ga.compareTo(gb);
-      if (c != 0) return c;
-      return a.id.compareTo(b.id);
-    });
+    final out = List<StickerModel>.from(ordered);
+
+    if (kDebugMode) {
+      debugPrint('[FrontMatcher] linesCount=${lines.length} wordCount=${wordList.length}');
+      debugPrint('[FrontMatcher] afterLineOrderedCount=$afterLinePassCount');
+      debugPrint(
+        '[FrontMatcher] greedyOccurrencesCount=${greedyResult?.length ?? 0}',
+      );
+      debugPrint(
+        '[FrontMatcher] greedyOccurrencesIds=${greedyResult?.map((e) => e.id).join(",") ?? ""}',
+      );
+      debugPrint('[FrontMatcher] finalMatchesCount=${out.length}');
+      debugPrint(
+        '[FrontMatcher] finalMatchesIdsWithDuplicates=${out.map((e) => e.id).join(",")}',
+      );
+      debugPrint(
+        '[FrontMatcher] shortAliasRejectedIds=${_shortAliasRejectLog.map((e) => e.split("|").first).join(",")}',
+      );
+      debugPrint(
+        '[FrontMatcher] shortAliasRejectedReason=${_shortAliasRejectLog.map((e) => e.contains("|") ? e.substring(e.indexOf("|") + 1) : e).join(" ; ")}',
+      );
+    }
+
     return out;
   }
 
@@ -224,14 +298,323 @@ class FrontStickerMatcher {
     return null;
   }
 
+  /// Plantel (o todo el seed) con el que probar spans en modo greedy.
+  List<StickerModel> _greedyCandidatePlayers(
+    List<StickerModel> strict,
+    List<StickerModel> allPlayers,
+    Map<String, _TeamHint> teamHints,
+  ) {
+    final exactTeams = teamHints.entries
+        .where((e) => e.value.exact)
+        .map((e) => e.key.toUpperCase())
+        .toList(growable: false);
+    if (exactTeams.length == 1) {
+      final tid = exactTeams[0];
+      return allPlayers
+          .where((p) => p.teamId.toUpperCase() == tid)
+          .toList(growable: false);
+    }
+    if (strict.isNotEmpty) {
+      final tids = strict.map((p) => p.teamId.toUpperCase()).toSet();
+      if (tids.length == 1) {
+        final tid = tids.first;
+        return allPlayers
+            .where((p) => p.teamId.toUpperCase() == tid)
+            .toList(growable: false);
+      }
+    }
+    return allPlayers;
+  }
+
+  /// Recorre [words] izquierda → derecha; cada span aceptado añade **una** fila
+  /// (el mismo [StickerModel.id] puede repetirse). [spanCandidates] suele ser el
+  /// plantel del equipo inferido, no solo ids únicos del strict.
+  ///
+  /// Prioridad: secuencia **exacta** palabra a palabra del nombre normalizado (p. ej.
+  /// `lyle foster` → RSA-17) antes que spans fuzzy, para no “robar” tokens entre
+  /// jugadores ni inflar un mismo apellido en el blob.
+  ///
+  /// El índice [i] avanza de uno en uno; las palabras cubiertas por un span aceptado
+  /// se marcan en [consumed] para no reutilizarlas, sin saltar al final del span
+  /// (evita perder coincidencias que empiezan en tokens intermedios).
+  List<StickerModel> _greedyPlayerSpansFromWords(
+    List<String> words,
+    List<StickerModel> spanCandidates,
+    Map<String, _TeamHint> teamHints, {
+    double minScore = _autoAddThreshold,
+  }) {
+    if (spanCandidates.isEmpty) return [];
+
+    final out = <StickerModel>[];
+    final greedyExactIds = <String>[];
+    final fuzzyAcceptedIds = <String>[];
+    final consumed = List<bool>.filled(words.length, false);
+    var i = 0;
+    while (i < words.length) {
+      if (consumed[i]) {
+        i++;
+        continue;
+      }
+
+      final exact = _tryExactFullNameWordSpanAt(words, i, spanCandidates, consumed);
+      if (exact != null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[FrontMatcher] greedyExactNameSpan=${exact.player.id} '
+            'rawSpan="${words.sublist(i, exact.end).join(" ")}"',
+          );
+        }
+        out.add(exact.player);
+        greedyExactIds.add(exact.player.id);
+        _markSpanConsumed(consumed, i, exact.end);
+        i++;
+        continue;
+      }
+
+      final matches = <({StickerModel p, int end, double score, int spanLen, int hasFullName})>[];
+      for (final player in spanCandidates) {
+        final playerName = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
+          player.playerName ?? '',
+        );
+        final rawNameWords = playerName
+            .split(' ')
+            .where((w) => w.length >= 2 && !_noiseTokens.contains(w))
+            .toList(growable: false);
+        if (rawNameWords.isEmpty) continue;
+        final minSpan = rawNameWords.length >= 2 ? 2 : 1;
+        // +1 en lugar de +2: evita que un fuzzy absorba la primera palabra del siguiente.
+        final maxSpan = (rawNameWords.length + 1).clamp(minSpan, 6);
+        for (var len = minSpan; len <= maxSpan && i + len <= words.length; len++) {
+          if (!_spanRangeUnconsumed(consumed, i, i + len)) continue;
+          final spanText = words.sublist(i, i + len).join(' ');
+          final score = _scorePlayerLineMatch(
+            line: spanText,
+            player: player,
+            teamHints: teamHints,
+          );
+          if (score >= minScore) {
+            final hasFull = playerName.length >= 4 && spanText.contains(playerName) ? 1 : 0;
+            matches.add((
+              p: player,
+              end: i + len,
+              score: score,
+              spanLen: len,
+              hasFullName: hasFull,
+            ));
+          }
+        }
+      }
+      if (matches.isEmpty) {
+        i++;
+        continue;
+      }
+      matches.sort((a, b) {
+        final c = b.hasFullName.compareTo(a.hasFullName);
+        if (c != 0) return c;
+        final c2 = b.score.compareTo(a.score);
+        if (c2 != 0) return c2;
+        return a.spanLen.compareTo(b.spanLen);
+      });
+      final top = matches.first;
+      final spanText = words.sublist(i, top.end).join(' ');
+      if (!_fuzzySpanPassesAnchorGate(spanText, top.p, top.score)) {
+        i++;
+        continue;
+      }
+      double? secondScore;
+      for (final m in matches.skip(1)) {
+        if (m.p.id != top.p.id) {
+          secondScore = m.score;
+          break;
+        }
+      }
+      final delta = secondScore == null ? 1.0 : top.score - secondScore;
+      final greedyDeltaMin = 0.08;
+      final typoTwoTokenOk = _fuzzySpanRelaxesAmbiguousDelta(spanText, top.p);
+      if (delta < greedyDeltaMin && top.score < 0.905 && !typoTwoTokenOk) {
+        i++;
+        continue;
+      }
+      out.add(top.p);
+      fuzzyAcceptedIds.add(top.p.id);
+      _markSpanConsumed(consumed, i, top.end);
+      i++;
+    }
+
+    if (kDebugMode) {
+      debugPrint('[FrontMatcher] greedyExactIds=${greedyExactIds.join(",")}');
+      debugPrint('[FrontMatcher] fuzzyAcceptedIds=${fuzzyAcceptedIds.join(",")}');
+    }
+
+    return out;
+  }
+
+  bool _spanRangeUnconsumed(List<bool> consumed, int start, int endExclusive) {
+    for (var k = start; k < endExclusive; k++) {
+      if (consumed[k]) return false;
+    }
+    return true;
+  }
+
+  void _markSpanConsumed(List<bool> consumed, int start, int endExclusive) {
+    for (var k = start; k < endExclusive; k++) {
+      consumed[k] = true;
+    }
+  }
+
+  /// Coincidencia exacta token a token del nombre normalizado (≥2 tokens significativos).
+  ({StickerModel player, int end})? _tryExactFullNameWordSpanAt(
+    List<String> words,
+    int i,
+    List<StickerModel> spanCandidates,
+    List<bool> consumed,
+  ) {
+    if (i >= words.length) return null;
+    ({StickerModel player, int end, int nameLen})? best;
+    for (final player in spanCandidates) {
+      if (player.type != StickerType.player) continue;
+      final playerName = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
+        player.playerName ?? '',
+      );
+      final nameTokens = playerName
+          .split(' ')
+          .where((w) => w.length >= 2 && !_noiseTokens.contains(w))
+          .toList(growable: false);
+      if (nameTokens.length < 2) continue;
+      if (i + nameTokens.length > words.length) continue;
+      if (!_spanRangeUnconsumed(consumed, i, i + nameTokens.length)) continue;
+      var allEq = true;
+      for (var k = 0; k < nameTokens.length; k++) {
+        if (words[i + k] != nameTokens[k]) {
+          allEq = false;
+          break;
+        }
+      }
+      if (!allEq) continue;
+      final end = i + nameTokens.length;
+      final cand = (player: player, end: end, nameLen: nameTokens.length);
+      if (best == null || cand.nameLen > best.nameLen) {
+        best = cand;
+      } else if (cand.nameLen == best.nameLen) {
+        if (cand.player.id.compareTo(best.player.id) < 0) best = cand;
+      }
+    }
+    if (best == null) return null;
+    return (player: best.player, end: best.end);
+  }
+
+  /// Evita fuzzy débil con un solo apellido/token compartido en spans cortos.
+  /// Alineado con [_scorePlayerLineMatch]: acepta 1 token ≥0.88 + otro ≥0.78 (OCR 1 letra).
+  bool _fuzzySpanPassesAnchorGate(String spanText, StickerModel player, double score) {
+    if (score >= 0.93) return true;
+    final pn = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
+      player.playerName ?? '',
+    );
+    final nameWords = pn
+        .split(' ')
+        .where((w) => w.length >= 2 && !_noiseTokens.contains(w))
+        .toList(growable: false);
+    if (nameWords.length < 2) return true;
+    final sn = WorldCup2026Seed.normalizeTextForPlayerNameMatch(spanText);
+    if (pn.length >= 4 && sn.contains(pn)) return true;
+    if (_normalizedSimilarity(pn, sn) >= 0.94) return true;
+    if (_countStrongNameWordHits(spanText, player, threshold: 0.88) >= 2) return true;
+    if (_fuzzySpanHasStrongPlusMediumToken(spanText, player)) return true;
+    return score >= 0.82 && _countStrongNameWordHits(spanText, player, threshold: 0.76) >= 2;
+  }
+
+  /// Misma idea que strongHits+mediumHits en [_scorePlayerLineMatch] (p. ej. SVBONGA + NGEZANA).
+  bool _fuzzySpanHasStrongPlusMediumToken(String spanText, StickerModel player) {
+    final pn = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
+      player.playerName ?? '',
+    );
+    final nameWords = pn
+        .split(' ')
+        .where((w) => w.length >= 2 && !_noiseTokens.contains(w))
+        .toList(growable: false);
+    if (nameWords.length < 2) return false;
+    final lineWords = spanText.split(' ').where((w) => w.isNotEmpty).toList();
+    var strong = 0;
+    var medium = 0;
+    for (final nw in nameWords) {
+      var best = 0.0;
+      for (final lw in lineWords) {
+        final s = _normalizedSimilarity(nw, lw);
+        if (s > best) best = s;
+      }
+      if (best >= 0.88) {
+        strong++;
+      } else if (best >= 0.78 && nw.length >= 4) {
+        medium++;
+      }
+    }
+    return strong >= 1 && medium >= 1;
+  }
+
+  /// Permite aceptar top aunque el segundo candidato esté muy cerca (OCR ruidoso).
+  bool _fuzzySpanRelaxesAmbiguousDelta(String spanText, StickerModel player) {
+    final pn = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
+      player.playerName ?? '',
+    );
+    final nameWords = pn
+        .split(' ')
+        .where((w) => w.length >= 2 && !_noiseTokens.contains(w))
+        .toList(growable: false);
+    if (nameWords.length < 2) return false;
+    final lineWords = spanText.split(' ').where((w) => w.isNotEmpty).toList();
+    var strong = 0;
+    var medium = 0;
+    for (final nw in nameWords) {
+      var best = 0.0;
+      for (final lw in lineWords) {
+        final s = _normalizedSimilarity(nw, lw);
+        if (s > best) best = s;
+      }
+      if (best >= 0.88) {
+        strong++;
+      } else if (best >= 0.78 && nw.length >= 4) {
+        medium++;
+      }
+    }
+    return (strong >= 1 && medium >= 1) || strong >= 2;
+  }
+
+  int _countStrongNameWordHits(
+    String spanText,
+    StickerModel player, {
+    required double threshold,
+  }) {
+    final pn = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
+      player.playerName ?? '',
+    );
+    final nameWords = pn
+        .split(' ')
+        .where((w) => w.length >= 2 && !_noiseTokens.contains(w))
+        .toList(growable: false);
+    if (nameWords.isEmpty) return 0;
+    final lineWords = spanText.split(' ').where((w) => w.isNotEmpty).toList();
+    var hits = 0;
+    for (final nw in nameWords) {
+      var best = 0.0;
+      for (final lw in lineWords) {
+        final s = _normalizedSimilarity(nw, lw);
+        if (s > best) best = s;
+      }
+      if (best >= threshold) hits++;
+    }
+    return hits;
+  }
+
+  /// Líneas candidatas en orden. **No** deduplica: la misma línea normalizada
+  /// puede repetirse (foto con varias copias del mismo jugador, una por carta).
   List<String> _extractCandidateLines(String rawOcrText) {
-    final out = <String>{};
+    final out = <String>[];
     for (final line in rawOcrText.split('\n')) {
       final normalized = WorldCup2026Seed.normalizeTextForPlayerNameMatch(line);
       if (normalized.length < 5) continue;
       out.add(normalized);
     }
-    return out.toList(growable: false);
+    return out;
   }
 
   List<StickerModel> _allPlayerStickers() {
@@ -262,6 +645,104 @@ class FrontStickerMatcher {
     return out;
   }
 
+  /// Monónimo corto tipo Rodri / Pedri / Gavi: no fuzzy débil contra apellidos largos.
+  bool _isShortMonolexicAlias(List<String> nameWords) {
+    if (nameWords.length != 1) return false;
+    final a = nameWords.first;
+    return a.length >= 2 && a.length <= 6;
+  }
+
+  void _logShortAliasReject(StickerModel player, String reason) {
+    if (!kDebugMode) return;
+    _shortAliasRejectLog.add('${player.id}|$reason');
+  }
+
+  /// Fragmentos OCR típicos de RODRIGUEZ / RODRIGO… que no deben acercarse a "Rodri".
+  bool _tokenIsLikelyRodriguezFamilyFragment(String lw, String alias) {
+    if (alias.toUpperCase() != 'RODRI') return false;
+    final u = lw.toUpperCase();
+    if (u == 'RODR') return true;
+    if (u.startsWith('RODRIG')) return true;
+    if (u.startsWith('RODR') && u.length >= 6) return true;
+    return false;
+  }
+
+  /// Solo palabra completa igual al alias, o fuzzy muy alto con longitud casi igual.
+  double _scoreShortMonolexicAliasLine({
+    required List<String> lineWords,
+    required StickerModel player,
+    required String alias,
+    required Map<String, _TeamHint> teamHints,
+  }) {
+    final tid = player.teamId.toUpperCase();
+    if (teamHints.isNotEmpty && !teamHints.containsKey(tid)) {
+      if (kDebugMode && _shortAliasTeamRejectLoggedIds.add(player.id)) {
+        _logShortAliasReject(
+          player,
+          'shortMono:noTeamEvidence need=$tid have=${teamHints.keys.join(",")}',
+        );
+      }
+      return 0;
+    }
+
+    if (lineWords.contains(alias)) {
+      var score = 0.75;
+      final teamHint = teamHints[tid];
+      if (teamHint != null) {
+        if (teamHint.exact) {
+          score += 0.20;
+        } else if (teamHint.fuzzy) {
+          score += 0.10;
+        }
+      }
+      return score.clamp(0.0, 1.0);
+    }
+
+    double best = 0.0;
+    String? bestTok;
+    for (final lw in lineWords) {
+      if (_tokenIsLikelyRodriguezFamilyFragment(lw, alias)) continue;
+      final s = _normalizedSimilarity(alias, lw);
+      if (s > best) {
+        best = s;
+        bestTok = lw;
+      }
+    }
+
+    const minFuzzy = 0.96;
+    if (bestTok == null || best < minFuzzy) {
+      if (best >= 0.72) {
+        _logShortAliasReject(
+          player,
+          'shortMono:fuzzyRejected sim=${best.toStringAsFixed(3)} tok=${bestTok ?? "?"}',
+        );
+      }
+      return 0;
+    }
+
+    final lenDiff = (alias.length - bestTok.length).abs();
+    if (lenDiff > 1) {
+      if (best >= 0.72) {
+        _logShortAliasReject(
+          player,
+          'shortMono:lenDiffRejected diff=$lenDiff tok=$bestTok sim=${best.toStringAsFixed(3)}',
+        );
+      }
+      return 0;
+    }
+
+    var score = 0.75;
+    final teamHint = teamHints[tid];
+    if (teamHint != null) {
+      if (teamHint.exact) {
+        score += 0.20;
+      } else if (teamHint.fuzzy) {
+        score += 0.10;
+      }
+    }
+    return score.clamp(0.0, 1.0);
+  }
+
   double _scorePlayerLineMatch({
     required String line,
     required StickerModel player,
@@ -278,6 +759,15 @@ class FrontStickerMatcher {
         .where((w) => w.length >= 2 && !_noiseTokens.contains(w))
         .toList();
     if (nameWords.isEmpty || lineWords.isEmpty) return 0;
+
+    if (_isShortMonolexicAlias(nameWords)) {
+      return _scoreShortMonolexicAliasLine(
+        lineWords: lineWords,
+        player: player,
+        alias: nameWords.first,
+        teamHints: teamHints,
+      );
+    }
 
     final strongTok = PlayerNameOcrFuzzy.strongTokensNormalized(playerName);
     final lineWordSet = lineWords.toSet();

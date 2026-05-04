@@ -247,6 +247,7 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
                                 child: TeamStickerCard(
                                   sticker: _toStickerItems().firstWhere((i) => i.code == s.code),
                                   count: _countFor(s),
+                                  teamFlagAssetPath: widget.team.flagAssetPath,
                                   onTap: () => _openStickerSheet(s),
                                 ),
                               ),

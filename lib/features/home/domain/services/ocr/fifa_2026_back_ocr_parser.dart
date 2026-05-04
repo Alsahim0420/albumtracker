@@ -1,4 +1,5 @@
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
+import 'package:flutter/foundation.dart';
 
 /// Reverso: texto de cabecera 2026 con código "POR 11".
 class Fifa2026BackOcrParser {
@@ -14,14 +15,19 @@ class Fifa2026BackOcrParser {
   /// o la especial **00** anclada junto al pie FIFA (sin patrón `XXX NN`).
   static bool isFifaWorldCup2026BackText(String upperNormalized) {
     final t = upperNormalized.toUpperCase();
-    if (!(t.contains('FIFA') &&
-        t.contains('WORLD') &&
-        t.contains('CUP') &&
-        t.contains('2026'))) {
+    if (!_hasFifaHeader(t)) {
       return false;
     }
+    if (_extractAnchoredBackCodePairs(t).isNotEmpty) return true;
     if (extractFifaStyleCodes(t).isNotEmpty) return true;
     return hasAnchoredBareSpecial00(t);
+  }
+
+  static bool _hasFifaHeader(String t) {
+    return t.contains('FIFA') &&
+        t.contains('WORLD') &&
+        t.contains('CUP') &&
+        t.contains('2026');
   }
 
   static final RegExp _fifaCodeLine = RegExp(
@@ -30,6 +36,16 @@ class Fifa2026BackOcrParser {
 
   /// `00` suelto como número de la **especial 00** (no parte de fechas/pesos).
   static final RegExp _bareSpecial00 = RegExp(r'(?<![0-9])00(?![0-9])');
+
+  /// Códigos pegados tipo `RSA11`, `R5A17` (equipo OCR ruidoso + slot).
+  static final RegExp _fifaGluedTeamDigits = RegExp(
+    r'(?<![A-Z0-9])([A-Z][A-Z0-9]{2})(\d{1,2})(?![0-9])',
+  );
+
+  /// Slot de una letra tras espacio: `RSA B` → 8.
+  static final RegExp _fifaSpacedLetterSlot = RegExp(
+    r'\b([A-Z]{3})\s+([A-Z])\b',
+  );
 
   /// Ventana **±240** caracteres alrededor del índice del ancla (incluye códigos
   /// impresos antes del pie FIFA, p. ej. `SUI 1` ... `CUP 2026` ... `ECU 1`).
@@ -44,10 +60,7 @@ class Fifa2026BackOcrParser {
   /// `00` anclado cerca de `CUP 2026` / `WORLD CUP 2026` (ventana simétrica).
   static bool hasAnchoredBareSpecial00(String upperNormalized) {
     final t = upperNormalized.toUpperCase();
-    if (!(t.contains('FIFA') &&
-        t.contains('WORLD') &&
-        t.contains('CUP') &&
-        t.contains('2026'))) {
+    if (!_hasFifaHeader(t)) {
       return false;
     }
     const anchors = <String>['CUP 2026', 'WORLD CUP 2026'];
@@ -66,20 +79,13 @@ class Fifa2026BackOcrParser {
     return false;
   }
 
-  /// Todos los pares (equipo, número) legibles, por orden de aparición.
-  /// Incluye `FWC 0`…`FWC 19` (especiales); **no** incluye `00` suelto (solo anclado).
+  /// Todos los pares (equipo, número) legibles en **todo** el texto (patrón simple).
+  /// Sin deduplicar: cada aparición OCR cuenta.
   static List<({String code, int number})> extractFifaStyleCodes(
     String upperNormalized,
   ) {
     final t = upperNormalized.toUpperCase();
     final out = <({String code, int number})>[];
-    final seen = <String>{};
-    void add(String code, int number) {
-      final key = '$code-$number';
-      if (!seen.add(key)) return;
-      out.add((code: code, number: number));
-    }
-
     for (final m in _fifaCodeLine.allMatches(t)) {
       final a = m.group(1);
       final b = m.group(2);
@@ -87,33 +93,24 @@ class Fifa2026BackOcrParser {
       final n = int.tryParse(b);
       if (n == null) continue;
       final normalizedCode = _normalizeOcrCode(a);
-      if (normalizedCode == 'FWC') {
-        if (n < 0 || n > 19) continue;
-      } else {
-        if (n < 1 || n > 20) continue;
-      }
-      add(normalizedCode, n);
+      if (!_isValidSlotForCode(normalizedCode, n)) continue;
+      out.add((code: normalizedCode, number: n));
     }
     return out;
   }
 
-  /// Solo pares `XXX NN` en ventana **±240** caracteres alrededor de `CUP 2026` /
-  /// `WORLD CUP 2026` (códigos antes o después del pie). Evita ruido lejos del ancla.
+  /// Pares en ventanas ancladas a `CUP 2026` / `WORLD CUP 2026`.
+  /// Normalización agresiva **solo** aquí (R5A→RSA, pegados, slot `B`→8, etc.).
+  /// **No** deduplica: misma lámina repetida en OCR → varias entradas.
   static List<({String code, int number})> extractFifaStyleCodesAnchoredNearCup2026(
     String upperNormalized,
   ) {
-    if (!isFifaWorldCup2026BackText(upperNormalized)) return const [];
-    final t = upperNormalized.toUpperCase();
+    if (!_hasFifaHeader(upperNormalized)) return const [];
+    return _extractAnchoredBackCodePairs(upperNormalized.toUpperCase());
+  }
+
+  static List<({String code, int number})> _extractAnchoredBackCodePairs(String t) {
     final ordered = <({String code, int number})>[];
-    final seen = <String>{};
-
-    void addPair(String rawCode, int number) {
-      final code = _normalizeOcrCode(rawCode);
-      final key = '$code-$number';
-      if (!seen.add(key)) return;
-      ordered.add((code: code, number: number));
-    }
-
     const anchors = <String>['CUP 2026', 'WORLD CUP 2026'];
     for (final anchor in anchors) {
       var from = 0;
@@ -121,27 +118,13 @@ class Fifa2026BackOcrParser {
         final i = t.indexOf(anchor, from);
         if (i < 0) break;
         final window = anchorWindowAround(t, i, anchor.length);
-        for (final m in _fifaCodeLine.allMatches(window)) {
-          final a = m.group(1);
-          final b = m.group(2);
-          if (a == null || b == null) continue;
-          final n = int.tryParse(b);
-          if (n == null) continue;
-          final c = _normalizeOcrCode(a);
-          if (c == 'FWC') {
-            if (n < 0 || n > 19) continue;
-          } else {
-            if (n < 1 || n > 20) continue;
-          }
-          addPair(a, n);
-        }
-        if (_bareSpecial00.hasMatch(window)) {
-          addPair('FWC', 0);
+        ordered.addAll(_scanWindowForBackCodes(window));
+        for (final _ in _bareSpecial00.allMatches(window)) {
+          ordered.add((code: 'FWC', number: 0));
         }
         from = i + anchor.length;
       }
     }
-
     return ordered;
   }
 
@@ -151,9 +134,9 @@ class Fifa2026BackOcrParser {
   ) {
     if (!isFifaWorldCup2026BackText(upperNormalized)) return null;
     final t = upperNormalized.toUpperCase();
-    var all = extractFifaStyleCodes(t);
+    var all = _extractAnchoredBackCodePairs(t);
     if (all.isEmpty) {
-      all = extractFifaStyleCodesAnchoredNearCup2026(t);
+      all = extractFifaStyleCodes(t);
     }
     if (all.isEmpty) return null;
     const cupAnchor = 'CUP 2026';
@@ -182,24 +165,164 @@ class Fifa2026BackOcrParser {
   /// Pares `XXX NN` / `FWC N` / especial **00** suelta en un segmento de pie de reverso.
   static List<({String code, int number})> _footerSegmentPairs(String segment) {
     final out = <({String code, int number})>[];
-    for (final m in _fifaCodeLine.allMatches(segment)) {
-      final a = m.group(1);
-      final b = m.group(2);
-      if (a == null || b == null) continue;
-      final n = int.tryParse(b);
-      if (n == null) continue;
-      final c = _normalizeOcrCode(a);
-      if (c == 'FWC') {
-        if (n < 0 || n > 19) continue;
-      } else {
-        if (n < 1 || n > 20) continue;
-      }
-      out.add((code: c, number: n));
-    }
-    if (_bareSpecial00.hasMatch(segment)) {
+    out.addAll(_scanWindowForBackCodes(segment));
+    for (final _ in _bareSpecial00.allMatches(segment)) {
       out.add((code: 'FWC', number: 0));
     }
     return out;
+  }
+
+  static bool _isValidSlotForCode(String code, int n) {
+    if (code == 'FWC') {
+      return n >= 0 && n <= 19;
+    }
+    return n >= 1 && n <= 20;
+  }
+
+  static void _logBackCandidate(String raw, String normalizedLabel, bool accepted) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[fifaBackOcr] rawBackCodeCandidate=$raw normalized=$normalizedLabel accepted=$accepted',
+    );
+  }
+
+  static List<({String code, int number})> _scanWindowForBackCodes(String window) {
+    final hits = <_BackCodeHit>[];
+
+    void pushHit(int start, int end, String rawFull, String rawTeam, String rawSlot) {
+      hits.add(
+        _BackCodeHit(
+          start: start,
+          end: end,
+          rawFull: rawFull,
+          rawTeam: rawTeam,
+          rawSlot: rawSlot,
+        ),
+      );
+    }
+
+    for (final m in _fifaCodeLine.allMatches(window)) {
+      final a = m.group(1);
+      final b = m.group(2);
+      if (a == null || b == null) continue;
+      pushHit(m.start, m.end, m.group(0) ?? '', a, b);
+    }
+
+    for (final m in _fifaGluedTeamDigits.allMatches(window)) {
+      final a = m.group(1);
+      final b = m.group(2);
+      if (a == null || b == null) continue;
+      if (a.length != 3) continue;
+      pushHit(m.start, m.end, m.group(0) ?? '', a, b);
+    }
+
+    for (final m in _fifaSpacedLetterSlot.allMatches(window)) {
+      final a = m.group(1);
+      final b = m.group(2);
+      if (a == null || b == null) continue;
+      if (int.tryParse(b) != null) continue;
+      pushHit(m.start, m.end, m.group(0) ?? '', a, b);
+    }
+
+    if (hits.isEmpty) return const [];
+
+    hits.sort((x, y) {
+      final c = x.start.compareTo(y.start);
+      if (c != 0) return c;
+      return (y.end - y.start).compareTo(x.end - x.start);
+    });
+
+    final picked = <_BackCodeHit>[];
+    var lastEnd = -1;
+    for (final h in hits) {
+      if (h.start < lastEnd) continue;
+      picked.add(h);
+      lastEnd = h.end;
+    }
+
+    final out = <({String code, int number})>[];
+    for (final h in picked) {
+      final pair = _pairFromBackHit(h);
+      if (pair != null) {
+        out.add(pair);
+      }
+    }
+    return out;
+  }
+
+  static ({String code, int number})? _pairFromBackHit(_BackCodeHit h) {
+    final teamNorm = _normalizeBackTeamOcr(h.rawTeam);
+    final code = _normalizeOcrCode(teamNorm);
+    if (code != 'FWC' && !_knownTeamCodes.contains(code)) {
+      _logBackCandidate(h.rawFull, '$code (unknown team)', false);
+      return null;
+    }
+    final slot = _parseBackSlotOcr(h.rawSlot);
+    if (slot == null) {
+      _logBackCandidate(h.rawFull, '$code ${h.rawSlot}', false);
+      return null;
+    }
+    if (!_isValidSlotForCode(code, slot)) {
+      _logBackCandidate(h.rawFull, '$code $slot', false);
+      return null;
+    }
+    _logBackCandidate(h.rawFull, '$code $slot', true);
+    return (code: code, number: slot);
+  }
+
+  /// Solo reverso anclado: `5`→`S` en token de 3 letras si forma código FIFA válido.
+  static String _normalizeBackTeamOcr(String rawTeam) {
+    final up = rawTeam.toUpperCase();
+    if (up.length != 3) return up;
+    if (_knownTeamCodes.contains(up)) return up;
+    final allFiveToS = up.replaceAll('5', 'S');
+    if (_knownTeamCodes.contains(allFiveToS)) return allFiveToS;
+    return up;
+  }
+
+  /// Parte numérica del reverso (incl. `B`→`8`, OCR en slot).
+  static int? _parseBackSlotOcr(String rawSlot) {
+    final s = rawSlot.trim().toUpperCase();
+    if (s.isEmpty) return null;
+    if (RegExp(r'^\d{1,2}$').hasMatch(s)) {
+      return int.tryParse(s);
+    }
+    if (s.length == 1) {
+      final mapped = _mapLetterSlotToDigit(s);
+      if (mapped == null) return null;
+      return int.tryParse(mapped);
+    }
+    final buf = StringBuffer();
+    for (final ch in s.split('')) {
+      if (RegExp(r'[0-9]').hasMatch(ch)) {
+        buf.write(ch);
+      } else {
+        final d = _mapLetterSlotToDigit(ch);
+        if (d == null) return null;
+        buf.write(d);
+      }
+    }
+    return int.tryParse(buf.toString());
+  }
+
+  /// Mapeo conservador en **slot** (contexto reverso anclado 2026).
+  static String? _mapLetterSlotToDigit(String ch) {
+    switch (ch) {
+      case 'B':
+        return '8';
+      case 'O':
+      case 'Q':
+        return '0';
+      case 'I':
+      case 'L':
+        return '1';
+      case 'Z':
+        return '2';
+      case 'A':
+        return '4';
+      default:
+        return null;
+    }
   }
 
   static String _normalizeOcrCode(String rawCode) {
@@ -245,4 +368,20 @@ class Fifa2026BackOcrParser {
     }
     return out;
   }
+}
+
+class _BackCodeHit {
+  const _BackCodeHit({
+    required this.start,
+    required this.end,
+    required this.rawFull,
+    required this.rawTeam,
+    required this.rawSlot,
+  });
+
+  final int start;
+  final int end;
+  final String rawFull;
+  final String rawTeam;
+  final String rawSlot;
 }

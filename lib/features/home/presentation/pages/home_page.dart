@@ -26,6 +26,7 @@ import 'package:albumtracker/features/home/presentation/widgets/missing_stickers
 import 'package:albumtracker/features/home/presentation/widgets/repeated_stickers_view.dart';
 import 'package:albumtracker/features/home/presentation/widgets/capture_review_sheet.dart';
 import 'package:albumtracker/features/home/presentation/widgets/sticker_scan_options_sheet.dart';
+import 'package:albumtracker/features/home/presentation/widgets/scan_special_tip_bottom_sheet.dart';
 import 'package:albumtracker/features/home/presentation/widgets/sticker_scan_result_dialog.dart';
 import 'package:albumtracker/features/home/presentation/widgets/sticker_count_sheet.dart';
 import 'package:albumtracker/features/home/presentation/widgets/team_sticker_card.dart';
@@ -356,35 +357,19 @@ class _HomePageState extends State<HomePage> {
       _processingImageCount = imagePaths.length;
       _processingOverlayShownAt = DateTime.now();
     });
-    await Future<void>.delayed(const Duration(milliseconds: 16));
+    // Un frame completo con overlay + [Ticker] de la animación antes del escaneo (GPT/ML Kit en el bloc).
+    await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
     context.read<AlbumBloc>().add(AlbumScanImagesRequested(imagePaths));
   }
 
   Future<bool> _showSpecialCaptureAdviceDialog() async {
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) {
-        final colors = Theme.of(ctx).colorScheme;
-        return AlertDialog(
-          title: Text('scanSpecialTipTitle'.tr()),
-          content: Text('scanSpecialTipBody'.tr()),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text('scanSpecialTipCancel'.tr()),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.primary,
-                foregroundColor: colors.onPrimary,
-              ),
-              child: Text('scanSpecialTipContinue'.tr()),
-            ),
-          ],
-        );
-      },
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      builder: (ctx) => const ScanSpecialTipBottomSheet(),
     );
     return result ?? false;
   }
@@ -504,7 +489,7 @@ class _StickerScanProcessingOverlay extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const _BouncingBallLoader(),
+                    const RepaintBoundary(child: _BouncingBallLoader()),
                     const SizedBox(height: 12),
                     Text(
                       imageCount == 1

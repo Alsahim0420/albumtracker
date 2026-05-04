@@ -9,6 +9,9 @@ class PlayerNameOcrFuzzy {
 
   static Set<String>? _sharedLastStrongSurnames;
 
+  /// Solo debug: ids con nombre de una sola palabra (sin fuzzy en esta pasada).
+  static final List<String> _skippedShortAliasIds = <String>[];
+
   /// Apellido “fuerte” final compartido por ≥2 jugadores en el seed (p. ej. pašalić).
   static void _ensureSharedLastStrongSurnames() {
     if (_sharedLastStrongSurnames != null) return;
@@ -78,6 +81,9 @@ class PlayerNameOcrFuzzy {
     String rawOcrText, {
     void Function(String stickerId, String reason)? onNameFuzzyReject,
   }) {
+    if (kDebugMode) {
+      _skippedShortAliasIds.clear();
+    }
     final exact = WorldCup2026Seed.findStickersByPlayerNamesInText(rawOcrText);
     final blob = WorldCup2026Seed.normalizeTextForPlayerNameMatch(rawOcrText);
     if (blob.length < 4) return exact;
@@ -105,6 +111,11 @@ class PlayerNameOcrFuzzy {
         }
       }
     }
+    if (kDebugMode && _skippedShortAliasIds.isNotEmpty) {
+      debugPrint(
+        '[playerNameFuzzy] skippedShortAliasIds=${_skippedShortAliasIds.toSet().join(",")}',
+      );
+    }
     return byId.values.toList(growable: false);
   }
 
@@ -131,22 +142,34 @@ class PlayerNameOcrFuzzy {
   }) {
     final playerNorm =
         WorldCup2026Seed.normalizeTextForPlayerNameMatch(sticker.playerName ?? '');
+    // Monónimos (Rodri, Gavi, Pedri): sin fuzzy; solo vale el exact match del caller.
+    if (_meaningfulWordCount(playerNorm) < 2) {
+      if (kDebugMode && emitDebugLog) {
+        _skippedShortAliasIds.add(sticker.id);
+      }
+      onReject?.call(
+        sticker.id,
+        'singleWordPlayerName:noFuzzy',
+      );
+      return null;
+    }
+
     final strong = _strongTokens(playerNorm);
     if (strong.isEmpty) return null;
 
+    // Nombre multi-palabra pero un solo token "fuerte" (p. ej. partícula débil + apellido).
     if (strong.length == 1) {
       final t = strong.first;
       if (isSharedLastStrongSurnameToken(t)) {
         return null;
       }
-      if (t.length < 6) return null;
       final best = _bestTokenVsCandidates(t, _ocrCandidates(blob));
       if (best.score >= 0.92) {
         final detail = _FuzzyMatchDetail(
           rawOcrToken: best.raw,
           seedToken: t,
           similarityScore: best.score,
-          reason: 'single_strong_token_high_confidence',
+          reason: 'single_strong_token_multivoice_name_fuzzy',
         );
         _debugLogMatch(sticker, detail, emitDebugLog);
         return detail;
@@ -224,6 +247,13 @@ class PlayerNameOcrFuzzy {
       'similarityScore=${detail.similarityScore.toStringAsFixed(3)} '
       'reason=${detail.reason}',
     );
+  }
+
+  static int _meaningfulWordCount(String normalizedPlayerName) {
+    return normalizedPlayerName
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .length;
   }
 
   /// Tokens “fuertes” del nombre (sin conectores); el último suele ser apellido.

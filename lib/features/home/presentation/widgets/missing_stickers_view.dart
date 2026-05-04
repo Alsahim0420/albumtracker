@@ -1,11 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import 'package:albumtracker/core/data/shield_assets.dart';
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
+import 'package:albumtracker/features/home/presentation/widgets/album_badge_flag_display.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
@@ -446,8 +445,7 @@ class _MissingStickerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final isBadge = WorldCup2026Seed.isBadgeStickerId(stickerId);
-    final teamCode = teamCodeFromStickerId(stickerId);
-    final shieldPath = isBadge ? getShieldAssetPath(teamCode) : null;
+    final flagPath = isBadge ? albumBadgeFlagAssetPathForStickerId(stickerId) : null;
 
     return GestureDetector(
       onTap: onTap,
@@ -470,23 +468,24 @@ class _MissingStickerCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.max,
             children: [
-              Text(
-                WorldCup2026Seed.stickerCaptionTitle(stickerId),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.onSurface,
-                      fontSize: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 11 : 10,
-                      fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? null : 'monospace',
-                      fontWeight: WorldCup2026Seed.isPlayerStickerId(stickerId) ? FontWeight.w600 : null,
-                    ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 6),
-              if (isBadge && shieldPath != null)
+              if (isBadge)
+                _MissingBadgeHeader(stickerId: stickerId, colors: colors)
+              else
+                Text(
+                  WorldCup2026Seed.stickerCaptionTitle(stickerId),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurface,
+                        fontSize: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 11 : 10,
+                        fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? null : 'monospace',
+                        fontWeight: WorldCup2026Seed.isPlayerStickerId(stickerId) ? FontWeight.w600 : null,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              SizedBox(height: isBadge ? 8 : 6),
+              if (isBadge && flagPath != null)
                 Expanded(
-                  child: Center(
-                    child: _buildTeamAsset(shieldPath),
-                  ),
+                  child: _missingBadgeFlagWithCode(context, stickerId, flagPath, colors),
                 )
               else if (isBadge)
                 Expanded(
@@ -520,11 +519,73 @@ class _MissingStickerCard extends StatelessWidget {
   }
 }
 
-Widget _buildTeamAsset(String assetPath) {
-  if (assetPath.toLowerCase().endsWith('.svg')) {
-    return SvgPicture.asset(assetPath, fit: BoxFit.contain);
+class _MissingBadgeHeader extends StatelessWidget {
+  const _MissingBadgeHeader({
+    required this.stickerId,
+    required this.colors,
+  });
+
+  final String stickerId;
+  final ColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = WorldCup2026Seed.getStickerById(stickerId);
+    final team = s != null ? WorldCup2026Seed.getTeamById(s.teamId) : null;
+    final title = team != null
+        ? 'teamDetailTeamBadgeCountry'.tr(namedArgs: {'country': team.name.tr()})
+        : 'teamDetailTeamBadge'.tr();
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: colors.onSurface,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
   }
-  return Image.asset(assetPath, fit: BoxFit.contain);
+}
+
+Widget _missingBadgeFlagWithCode(
+  BuildContext context,
+  String stickerId,
+  String flagPath,
+  ColorScheme colors,
+) {
+  final s = WorldCup2026Seed.getStickerById(stickerId);
+  final code = s?.displayCode ?? WorldCup2026Seed.stickerNumberLabel(stickerId);
+  return AlbumBadgeFlagWithCenteredCode(
+    assetPath: flagPath,
+    code: code,
+    codeStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: colors.onSurface,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'monospace',
+          fontSize: 12,
+          letterSpacing: 0.4,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 6,
+            ),
+          ],
+        ) ??
+        TextStyle(
+          color: colors.onSurface,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'monospace',
+          fontSize: 12,
+          letterSpacing: 0.4,
+          shadows: [
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+  );
 }
 
 class _AddOneSheet extends StatelessWidget {

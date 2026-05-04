@@ -55,6 +55,7 @@ class SingleStickerScanResult extends Equatable {
 class BatchStickerScanResult extends Equatable {
   const BatchStickerScanResult({
     required this.total,
+    required this.processedStickerCount,
     required this.added,
     required this.alreadyOwned,
     required this.notFound,
@@ -63,7 +64,12 @@ class BatchStickerScanResult extends Equatable {
     required this.items,
   });
 
+  /// Filas en [items] (éxitos, fallos, no encontrado, etc.).
   final int total;
+
+  /// Láminas válidas detectadas y aplicadas a la colección (nuevas + repetidas).
+  final int processedStickerCount;
+
   final int added;
   final int alreadyOwned;
   final int notFound;
@@ -74,6 +80,7 @@ class BatchStickerScanResult extends Equatable {
   @override
   List<Object?> get props => [
     total,
+    processedStickerCount,
     added,
     alreadyOwned,
     notFound,

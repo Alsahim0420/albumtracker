@@ -4,11 +4,12 @@ import 'fifa_2026_back_ocr_parser.dart';
 class SpecialStickerOcrHeuristic {
   /// [normalizedUpper] = [StickerTextParser] style.
   static bool looksLikeSpecialUnnumberedAlbumSticker(String normalizedUpper) {
-    if (Fifa2026BackOcrParser.isFifaWorldCup2026BackText(normalizedUpper) &&
-        Fifa2026BackOcrParser.extractFifaStyleCodes(normalizedUpper).isNotEmpty) {
+    final hasBackCodes = Fifa2026BackOcrParser.extractFifaStyleCodes(normalizedUpper).isNotEmpty ||
+        Fifa2026BackOcrParser.extractFifaStyleCodesAnchoredNearCup2026(normalizedUpper).isNotEmpty;
+    if (Fifa2026BackOcrParser.isFifaWorldCup2026BackText(normalizedUpper) && hasBackCodes) {
       return false;
     }
-    if (Fifa2026BackOcrParser.extractFifaStyleCodes(normalizedUpper).isNotEmpty) {
+    if (hasBackCodes) {
       return false;
     }
     final t = normalizedUpper;

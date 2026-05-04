@@ -1,3 +1,4 @@
+import 'package:albumtracker/core/services/openai_service.dart';
 import 'package:albumtracker/features/home/data/datasources/album_local_datasource.dart';
 import 'package:albumtracker/features/home/data/datasources/album_local_datasource_impl.dart';
 import 'package:albumtracker/features/home/data/repositories/album_repository_impl.dart';
@@ -32,6 +33,7 @@ Future<void> init() async {
   );
 
   sl.registerLazySingleton(() => StickerImageInputService());
+  sl.registerLazySingleton(() => OpenAIService());
   sl.registerLazySingleton(() => StickerOcrService());
   sl.registerLazySingleton(() => StickerTextParser());
   sl.registerLazySingleton(() => StickerMatcherService());
@@ -55,6 +57,7 @@ Future<void> init() async {
     () => StickerScanCoordinator(
       ocrService: sl(),
       ocrResolver: sl(),
+      openAiService: sl(),
     ),
   );
 

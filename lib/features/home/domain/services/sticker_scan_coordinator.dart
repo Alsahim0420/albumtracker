@@ -1,31 +1,63 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:albumtracker/core/models/sticker_model.dart';
+import 'package:albumtracker/core/services/openai_service.dart';
 import 'package:albumtracker/features/home/data/services/sticker_ocr_service.dart';
 import 'package:albumtracker/features/home/domain/entities/ocr_sticker_detection.dart';
 import 'package:albumtracker/features/home/domain/entities/sticker_scan_image_side.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_matcher_service.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_ocr_resolver.dart';
 
-/// Orquesta OCR → lado → estrategia.
-/// Frente: puede devolver varias láminas (rejilla / varios jugadores en una foto).
-/// Reverso: como mucho una lámina por imagen.
+/// Orquesta captura → texto → resolver.
+///
+/// Con API key OpenAI: **solo visión GPT** (imagen → texto), sin ML Kit.
+/// Si GPT devuelve vacío o error, no hay respaldo OCR: se resuelve con texto vacío.
+/// Sin clave: ML Kit como única fuente de texto.
+/// El texto pasa al mismo [StickerOcrResolver]: si hay varias apariciones
+/// del mismo jugador/código en el texto, el matcher puede devolver el mismo id varias veces
+/// y el use case suma cada una al álbum.
+/// Frente: puede devolver varias láminas; reverso: según resolución actual.
 class StickerScanCoordinator {
   StickerScanCoordinator({
     required StickerOcrService ocrService,
     required StickerOcrResolver ocrResolver,
+    required OpenAIService openAiService,
   }) : _ocrService = ocrService,
-       _ocrResolver = ocrResolver;
+       _ocrResolver = ocrResolver,
+       _openAiService = openAiService;
 
   final StickerOcrService _ocrService;
   final StickerOcrResolver _ocrResolver;
+  final OpenAIService _openAiService;
 
   Future<StickerScanPipelineResult> processImage(String imagePath) async {
-    final rawText = await _ocrService.extractText(imagePath);
-    final normalizedText = _ocrResolver.textParser.normalizeRawText(rawText);
+    String textForResolve;
+    String rawTextForResult;
+    if (_openAiService.isConfigured) {
+      textForResolve = await _openAiService.extractStickerTextFromImage(imagePath);
+      rawTextForResult = textForResolve;
+      if (textForResolve.trim().isEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            '[StickerScan] GPT visión vacío o error; sin respaldo ML Kit (solo IA)',
+          );
+        }
+      } else if (kDebugMode) {
+        debugPrint(
+          '[StickerScan] texto desde GPT visión (${textForResolve.length} caracteres)',
+        );
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint('[StickerScan] Sin OPENAI_API_KEY; usando ML Kit');
+      }
+      textForResolve = await _ocrService.extractText(imagePath);
+      rawTextForResult = textForResolve;
+    }
+    final normalizedText = _ocrResolver.textParser.normalizeRawText(textForResolve);
     final full = await _ocrResolver.resolve(
       imagePath: imagePath,
-      rawOcrText: rawText,
+      rawOcrText: textForResolve,
     );
     final side = full.inferredSide;
     final stickers = full.resolvedStickers;
@@ -40,6 +72,10 @@ class StickerScanCoordinator {
       debugPrint(
         '[StickerScan] matches (${stickers.length}): ${stickers.map((s) => s.id).join(", ")}',
       );
+      debugPrint('[StickerScan] finalMatchesCount=${stickers.length}');
+      debugPrint(
+        '[StickerScan] finalMatchesIdsWithDuplicates=${stickers.map((s) => s.id).join(", ")}',
+      );
       for (final line in rejectedMatchLog) {
         debugPrint('[StickerScan] rejectedMatch: $line');
       }
@@ -47,7 +83,7 @@ class StickerScanCoordinator {
 
     return StickerScanPipelineResult(
       imagePath: imagePath,
-      rawText: rawText,
+      rawText: rawTextForResult,
       normalizedText: normalizedText,
       side: side,
       matchedStickers: stickers,

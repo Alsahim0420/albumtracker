@@ -19,7 +19,14 @@ Future<void> showStickerScanResultDialog(
             e.status == StickerScanStatus.alreadyExists,
       )
       .toList();
-  final successfulStickers = _dedupeSuccessfulStickers(successfulItems);
+  final addedItems = successfulItems
+      .where((e) => e.status == StickerScanStatus.added)
+      .toList();
+  final ownedItems = successfulItems
+      .where((e) => e.status == StickerScanStatus.alreadyExists)
+      .toList();
+  final addedGroupedLines = _groupedScanSummaryLines(addedItems);
+  final ownedGroupedLines = _groupedScanSummaryLines(ownedItems);
   final issueItems = result.items
       .where(
         (e) =>
@@ -119,7 +126,7 @@ Future<void> showStickerScanResultDialog(
                                 children: [
                                   _ResultChip(
                                     label: 'scanResultChipProcessed'.tr(),
-                                    value: result.total,
+                                    value: result.processedStickerCount,
                                     backgroundColor: colors.surfaceContainerHigh,
                                     foregroundColor: colors.onSurface,
                                   ),
@@ -156,38 +163,45 @@ Future<void> showStickerScanResultDialog(
                                     ),
                                 ],
                               ),
-                              if (successfulStickers.isNotEmpty) ...[
+                              if (addedGroupedLines.isNotEmpty) ...[
                                 const SizedBox(height: 14),
                                 Text(
-                                  'Láminas agregadas',
+                                  'scanResultSectionAddedHeader'.tr(),
                                   style: theme.textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                ...successfulStickers.map(
-                                  (item) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 2),
-                                          child: Icon(
-                                            Icons.check_circle_outline_rounded,
-                                            size: 18,
-                                            color: colors.primary,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            item.line,
-                                            style: theme.textTheme.bodyMedium
-                                                ?.copyWith(height: 1.25),
-                                          ),
-                                        ),
-                                      ],
+                                const SizedBox(height: 6),
+                                ...addedGroupedLines.map(
+                                  (line) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 6),
+                                    child: Text(
+                                      line,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        height: 1.25,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (ownedGroupedLines.isNotEmpty) ...[
+                                const SizedBox(height: 14),
+                                Text(
+                                  'scanResultSectionOwnedHeader'.tr(),
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                ...ownedGroupedLines.map(
+                                  (line) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 6),
+                                    child: Text(
+                                      line,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        height: 1.25,
+                                        color: colors.onSurfaceVariant,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -390,27 +404,29 @@ String _issueLine(SingleStickerScanResult e) {
   }
 }
 
-class _SuccessfulStickerLine {
-  const _SuccessfulStickerLine({required this.line});
-  final String line;
-}
-
-List<_SuccessfulStickerLine> _dedupeSuccessfulStickers(
-  List<SingleStickerScanResult> successfulItems,
-) {
-  final out = <_SuccessfulStickerLine>[];
-  final seen = <String>{};
-
+/// Resumen agrupado por lámina (orden de primera aparición en el lote).
+List<String> _groupedScanSummaryLines(List<SingleStickerScanResult> successfulItems) {
+  final order = <String>[];
+  final counts = <String, int>{};
+  final idToSticker = <String, StickerModel>{};
   for (final e in successfulItems) {
-    final sticker = e.matchedSticker;
-    if (sticker == null) continue;
-    final line = _successfulStickerLine(sticker);
-    final key = '${sticker.id}|$line';
-    if (!seen.add(key)) continue;
-    out.add(_SuccessfulStickerLine(line: line));
+    final s = e.matchedSticker;
+    if (s == null) continue;
+    counts[s.id] = (counts[s.id] ?? 0) + 1;
+    idToSticker[s.id] = s;
+    if (!order.contains(s.id)) order.add(s.id);
   }
-
-  return out;
+  return order.map((id) {
+    final sticker = idToSticker[id]!;
+    final n = counts[id]!;
+    final label = _successfulStickerLine(sticker);
+    if (n == 1) {
+      return 'scanResultScanSummaryLineOne'.tr(namedArgs: {'label': label});
+    }
+    return 'scanResultScanSummaryLineMany'.tr(
+      namedArgs: {'label': label, 'count': '$n'},
+    );
+  }).toList();
 }
 
 String _successfulStickerLine(StickerModel sticker) {

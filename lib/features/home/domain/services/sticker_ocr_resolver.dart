@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/data/team_english_name_index.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
@@ -12,6 +14,7 @@ import 'package:albumtracker/features/home/domain/services/ocr/we_are_front_coun
 import 'package:albumtracker/features/home/domain/services/sticker_image_side_detector.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_matcher_service.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_text_parser.dart';
+import 'package:flutter/foundation.dart';
 
 /// No auto-añadir por debajo de este umbral.
 const double kOcrMinConfidenceToAutoAdd = 0.85;
@@ -76,7 +79,10 @@ class StickerOcrResolver {
       );
     }
 
-    final multiBack = _resolveAllFifa2026BackStickers(normalized);
+    var multiBack = _resolveAllFifa2026BackStickers(normalized);
+    if (multiBack.isNotEmpty) {
+      multiBack = _compressFifaBackMatchesIfNeeded(multiBack, rawOcrText);
+    }
     final fifaPath = _resolveFifa2026BackPath(normalized);
     final frontCollage = frontMatcher.matchAllWithCountryInText(
       rawOcrText,
@@ -142,15 +148,12 @@ class StickerOcrResolver {
 
     if (we != null) {
       // En collages del frente puede haber varias láminas: jugadores + "WE ARE ...".
-      // Construimos un set combinado para no quedarnos solo con una detección temprana.
-      final byId = <String, StickerModel>{};
+      // [matchAllWithCountryInText] puede repetir el mismo id (varias líneas / duplicados).
       final front = frontMatcher.matchAllWithCountryInText(
         rawOcrText,
         requireExplicitFullPlayerNameInBlob: hasFifa,
       );
-      for (final s in front) {
-        byId[s.id] = s;
-      }
+      final resolved = List<StickerModel>.from(front);
 
       final weCodes = <String>{we};
       for (final line in rawOcrText.split('\n')) {
@@ -160,22 +163,22 @@ class StickerOcrResolver {
           weCodes.add(code);
         }
       }
+      final teamPhotoIds = <String>{};
       for (final code in weCodes) {
         final teamPhoto = _teamPhotoStickerByTeam(code);
-        if (teamPhoto != null) {
-          byId[teamPhoto.id] = teamPhoto;
+        if (teamPhoto != null && teamPhotoIds.add(teamPhoto.id)) {
+          resolved.add(teamPhoto);
         }
       }
 
-      if (byId.isNotEmpty) {
-        final resolved = byId.values.toList(growable: false)
-          ..sort((a, b) {
-            final ga = a.globalNumber ?? (1 << 30);
-            final gb = b.globalNumber ?? (1 << 30);
-            final c = ga.compareTo(gb);
-            if (c != 0) return c;
-            return a.id.compareTo(b.id);
-          });
+      if (resolved.isNotEmpty) {
+        resolved.sort((a, b) {
+          final ga = a.globalNumber ?? (1 << 30);
+          final gb = b.globalNumber ?? (1 << 30);
+          final c = ga.compareTo(gb);
+          if (c != 0) return c;
+          return a.id.compareTo(b.id);
+        });
         final first = resolved.first;
         final firstNumber = int.tryParse(first.code.split(' ').last) ??
             first.localNumber ??
@@ -423,27 +426,13 @@ class StickerOcrResolver {
     if (!hasFifa || backs.isEmpty) return null;
     if (requireFrontMatches && frontCollage.isEmpty) return null;
 
-    final byId = <String, StickerModel>{};
-    for (final s in backs) {
-      byId[s.id] = s;
-    }
+    var resolved = <StickerModel>[...backs];
     if (requireFrontMatches) {
-      for (final s in frontCollage) {
-        byId[s.id] = s;
-      }
+      resolved.addAll(frontCollage);
       if (frontBest != null) {
-        byId[frontBest.id] = frontBest;
+        resolved.add(frontBest);
       }
     }
-
-    var resolved = byId.values.toList(growable: false)
-      ..sort((a, b) {
-        final ga = a.globalNumber ?? (1 << 30);
-        final gb = b.globalNumber ?? (1 << 30);
-        final c = ga.compareTo(gb);
-        if (c != 0) return c;
-        return a.id.compareTo(b.id);
-      });
     resolved = _applyFifaCollageEvidenceFilter(
       resolved,
       normalized,
@@ -578,23 +567,80 @@ class StickerOcrResolver {
     if (!Fifa2026BackOcrParser.isFifaWorldCup2026BackText(normalized)) {
       return const [];
     }
-    final byId = <String, StickerModel>{};
     final pairs =
         Fifa2026BackOcrParser.extractFifaStyleCodesAnchoredNearCup2026(normalized);
+    final out = <StickerModel>[];
     for (final p in pairs) {
       final s = _stickerByTeamSlot(p.code, p.number);
       if (s != null) {
-        byId[s.id] = s;
+        out.add(s);
       }
     }
-    final out = byId.values.toList(growable: false)
-      ..sort((a, b) {
-        final ga = a.globalNumber ?? (1 << 30);
-        final gb = b.globalNumber ?? (1 << 30);
-        final c = ga.compareTo(gb);
-        if (c != 0) return c;
-        return a.id.compareTo(b.id);
-      });
+    return out;
+  }
+
+  /// Líneas no vacías del OCR bruto (el normalizado aplana `\n` a espacio).
+  int _meaningfulOcrLineCount(String rawOcrText) {
+    return rawOcrText
+        .split(RegExp(r'[\r\n]+'))
+        .where((l) => l.trim().isNotEmpty)
+        .length;
+  }
+
+  /// Ocurrencias no solapadas de [needle] en [upper] (pie FIFA repetido por lámina).
+  int _countDisjointSubstrings(String upper, String needle) {
+    if (needle.isEmpty) return 0;
+    var n = 0;
+    var from = 0;
+    while (true) {
+      final i = upper.indexOf(needle, from);
+      if (i < 0) break;
+      n++;
+      from = i + needle.length;
+    }
+    return n;
+  }
+
+  /// Tope de láminas físicas en reverso: líneas OCR si hay varias; si no, anclas `CUP 2026`.
+  int _inferBackStickerCapFromOcr(String rawOcrText) {
+    final upper = rawOcrText.toUpperCase();
+    final lines = _meaningfulOcrLineCount(rawOcrText);
+    var cup = _countDisjointSubstrings(upper, 'CUP 2026');
+    if (cup == 0) {
+      cup = _countDisjointSubstrings(upper, 'WORLD CUP 2026');
+    }
+    var cap = lines >= 2 ? lines : math.max(1, cup);
+    cap = cap.clamp(1, 60);
+    return cap;
+  }
+
+  /// Evita explosión cuando el OCR repite el mismo bloque FIFA muchas veces.
+  List<StickerModel> _compressFifaBackMatchesIfNeeded(
+    List<StickerModel> raw,
+    String rawOcrText,
+  ) {
+    final rawCount = raw.length;
+    final cap = _inferBackStickerCapFromOcr(rawOcrText);
+    final shouldCompress = rawCount > 30 || rawCount > cap * 2;
+    if (!shouldCompress) {
+      if (kDebugMode) {
+        debugPrint('[BackMatcher] rawBackMatchesCount=$rawCount');
+        debugPrint('[BackMatcher] compressedBackMatchesCount=$rawCount');
+        debugPrint('[BackMatcher] compressionApplied=false backStickerCap=$cap');
+      }
+      return raw;
+    }
+    var maxOut = cap;
+    if (maxOut <= 1 && rawCount > 30) {
+      maxOut = math.min(30, rawCount);
+    }
+    maxOut = math.min(maxOut, rawCount).clamp(1, rawCount);
+    final out = raw.sublist(0, maxOut);
+    if (kDebugMode) {
+      debugPrint('[BackMatcher] rawBackMatchesCount=$rawCount');
+      debugPrint('[BackMatcher] compressedBackMatchesCount=${out.length}');
+      debugPrint('[BackMatcher] compressionApplied=true backStickerCap=$cap');
+    }
     return out;
   }
 

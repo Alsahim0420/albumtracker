@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-
 import 'package:albumtracker/core/data/shield_assets.dart';
+import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
+import 'package:albumtracker/features/home/presentation/widgets/album_badge_flag_display.dart';
 
 /// Card de una lamina en la rejilla del equipo (encontrada o faltante).
 class TeamStickerCard extends StatelessWidget {
@@ -12,12 +12,15 @@ class TeamStickerCard extends StatelessWidget {
     required this.sticker,
     this.count,
     this.onTap,
+    /// Bandera del [TeamModel] (detalle equipo). Si es null en insignia, se resuelve por código.
+    this.teamFlagAssetPath,
   });
 
   final TeamStickerItem sticker;
   /// Si se pasa, se usa para mostrar estado y cantidad (count > 0 = encontrada).
   final int? count;
   final VoidCallback? onTap;
+  final String? teamFlagAssetPath;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +82,6 @@ class TeamStickerCard extends StatelessWidget {
     );
   }
 
-  /// Espacio derecho: si el contador va en línea con el escudo (badge + duplicados), no hace falta reservar tanto.
   double _trailingPaddingForCard(TeamStickerType type, int? count) {
     if (type == TeamStickerType.badge && count != null && count > 1) {
       return 10;
@@ -87,7 +89,6 @@ class TeamStickerCard extends StatelessWidget {
     return 20;
   }
 
-  /// Contador de duplicados en la esquina solo si no va integrado en la fila del badge.
   Widget _buildCornerStatus(BuildContext context, ColorScheme colors, bool isCollected) {
     if (!isCollected) {
       return Icon(
@@ -138,6 +139,36 @@ class TeamStickerCard extends StatelessWidget {
     );
   }
 
+  String? _resolveBadgeFlagPath() {
+    final fromProp = teamFlagAssetPath?.trim();
+    if (fromProp != null && fromProp.isNotEmpty) return fromProp;
+    final sm = WorldCup2026Seed.getStickerByFlexibleIdentifier(sticker.code);
+    if (sm != null) {
+      final team = WorldCup2026Seed.getTeamById(sm.teamId);
+      final p = team?.flagAssetPath?.trim();
+      if (p != null && p.isNotEmpty) return p;
+      return getShieldAssetPath(sm.teamId);
+    }
+    final parts = sticker.displayCode.split(RegExp(r'\s+'));
+    if (parts.isNotEmpty) {
+      return getShieldAssetPath(parts.first);
+    }
+    return null;
+  }
+
+  String _badgeTitleText(BuildContext context) {
+    final sm = WorldCup2026Seed.getStickerByFlexibleIdentifier(sticker.code);
+    if (sm != null) {
+      final team = WorldCup2026Seed.getTeamById(sm.teamId);
+      if (team != null) {
+        return 'teamDetailTeamBadgeCountry'.tr(
+          namedArgs: {'country': team.name.tr()},
+        );
+      }
+    }
+    return 'teamDetailTeamBadge'.tr();
+  }
+
   Widget _buildCenterContent(BuildContext context, bool isCollected, int? count) {
     final colors = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -146,46 +177,58 @@ class TeamStickerCard extends StatelessWidget {
           fontSize: 12,
         );
     if (sticker.type == TeamStickerType.badge) {
-      final teamCode = teamCodeFromStickerId(sticker.code);
-      final shieldPath = getShieldAssetPath(teamCode);
+      final shieldPath = _resolveBadgeFlagPath();
       if (shieldPath != null) {
-        final badgeCode = sticker.displayCode;
+        final codeColor = isCollected ? colors.onPrimary : colors.onSurface;
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             Expanded(
-              child: Center(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Opacity(
-                      opacity: 0.10,
-                      child: _buildTeamAsset(shieldPath),
+              child: AlbumBadgeFlagWithCenteredCode(
+                assetPath: shieldPath,
+                code: sticker.displayCode,
+                codeStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: codeColor,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      letterSpacing: 0.4,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: isCollected ? 0.3 : 0.2),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ) ??
+                    TextStyle(
+                      color: codeColor,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      letterSpacing: 0.4,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: isCollected ? 0.3 : 0.2),
+                          blurRadius: 6,
+                        ),
+                      ],
                     ),
-                    Text(
-                      badgeCode,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: isCollected
-                                ? colors.onPrimary.withValues(alpha: 0.95)
-                                : colors.onSurface.withValues(alpha: 0.82),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                          ),
-                    ),
-                  ],
-                ),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
-                    'teamDetailTeamBadge'.tr(),
-                    style: textStyle,
-                    maxLines: 1,
+                    _badgeTitleText(context),
+                    style: textStyle?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: isCollected ? colors.onPrimary : colors.onSurface,
+                    ),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                   ),
@@ -276,17 +319,9 @@ class TeamStickerCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTeamAsset(String assetPath) {
-    if (assetPath.toLowerCase().endsWith('.svg')) {
-      return SvgPicture.asset(assetPath, fit: BoxFit.contain);
-    }
-    return Image.asset(assetPath, fit: BoxFit.contain);
-  }
-
   String _headerCode(TeamStickerItem item) {
     if (item.type != TeamStickerType.badge) return item.displayCode;
     final parts = item.displayCode.split(RegExp(r'\s+'));
     return parts.isNotEmpty ? parts.first : item.displayCode;
   }
-
 }
