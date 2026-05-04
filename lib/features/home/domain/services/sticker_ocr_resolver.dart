@@ -79,21 +79,63 @@ class StickerOcrResolver {
       );
     }
 
-    var multiBack = _resolveAllFifa2026BackStickers(normalized);
-    if (multiBack.isNotEmpty) {
-      multiBack = _compressFifaBackMatchesIfNeeded(multiBack, rawOcrText);
-    }
-    final fifaPath = _resolveFifa2026BackPath(normalized);
     final frontCollage = frontMatcher.matchAllWithCountryInText(
       rawOcrText,
       requireExplicitFullPlayerNameInBlob: hasFifa,
     );
+    final frontPlayerCount =
+        frontCollage.where((s) => s.type == StickerType.player).length;
+    final forcedFrontMode = frontPlayerCount >= 2;
+    var backRejectedDueToFront = false;
+
+    var multiBack = _resolveAllFifa2026BackStickers(normalized);
+    if (multiBack.isNotEmpty) {
+      multiBack = _compressFifaBackMatchesIfNeeded(multiBack, rawOcrText, normalized);
+    }
+
+    if (forcedFrontMode && multiBack.isNotEmpty) {
+      multiBack = <StickerModel>[];
+      backRejectedDueToFront = true;
+    } else if (!forcedFrontMode &&
+        multiBack.isNotEmpty &&
+        frontCollage.isNotEmpty) {
+      final dominant = _dominantTeamFromFrontPlayers(frontCollage);
+      if (dominant != null) {
+        final filtered =
+            multiBack.where((b) => b.teamId.toUpperCase() == dominant).toList();
+        if (filtered.length != multiBack.length) {
+          backRejectedDueToFront = true;
+          multiBack = filtered;
+        }
+      }
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        '[OcrResolver] forcedFrontMode=$forcedFrontMode '
+        'backRejectedDueToFront=$backRejectedDueToFront',
+      );
+    }
+
+    final fifaPath = _resolveFifa2026BackPath(normalized);
     final frontBestCollage = hasFifa
         ? frontMatcher.matchSingleBestEffort(
             rawOcrText,
             requireExplicitFullPlayerNameInBlob: true,
           )
         : null;
+
+    if (hasFifa &&
+        frontCollage.isNotEmpty &&
+        (forcedFrontMode || multiBack.isEmpty)) {
+      return _fifaFrontCollageOnlyResult(
+        frontCollage,
+        frontBestCollage,
+        normalized,
+        scrubbedRaw,
+        rawUpper,
+      );
+    }
 
     final hybridMulti = _tryFifaAndFrontCollage(
       hasFifa: hasFifa,
@@ -109,7 +151,7 @@ class StickerOcrResolver {
       return hybridMulti;
     }
 
-    if (multiBack.length >= 2) {
+    if (multiBack.length >= 2 && frontPlayerCount == 0) {
       final backsOnly = _tryFifaAndFrontCollage(
         hasFifa: hasFifa,
         backs: multiBack,
@@ -126,9 +168,24 @@ class StickerOcrResolver {
     }
 
     if (fifaPath != null) {
+      final backSticker = fifaPath.$1;
+      final dominant = _dominantTeamFromFrontPlayers(frontCollage);
+      final rejectSingleBack = frontCollage.isNotEmpty &&
+          (frontPlayerCount >= 2 ||
+              (dominant != null &&
+                  backSticker.teamId.toUpperCase() != dominant));
+      if (rejectSingleBack) {
+        return _fifaFrontCollageOnlyResult(
+          frontCollage,
+          frontBestCollage,
+          normalized,
+          scrubbedRaw,
+          rawUpper,
+        );
+      }
       final hybridSingle = _tryFifaAndFrontCollage(
         hasFifa: hasFifa,
-        backs: [fifaPath.$1],
+        backs: [backSticker],
         frontCollage: frontCollage,
         frontBest: frontBestCollage,
         normalized: normalized,
@@ -141,7 +198,7 @@ class StickerOcrResolver {
       }
       return StickerOcrFullResult(
         inferredSide: StickerScanImageSide.back,
-        resolvedStickers: [fifaPath.$1],
+        resolvedStickers: [backSticker],
         primaryDetection: fifaPath.$2,
       );
     }
@@ -411,6 +468,72 @@ class StickerOcrResolver {
     );
   }
 
+  /// Solo frente: cabecera FIFA en el OCR pero sin reversos creíbles o se prioriza anverso.
+  StickerOcrFullResult _fifaFrontCollageOnlyResult(
+    List<StickerModel> frontCollage,
+    StickerModel? frontBest,
+    String normalized,
+    String scrubbedRaw,
+    String rawUpper,
+  ) {
+    var resolved = List<StickerModel>.from(frontCollage);
+    if (frontBest != null) {
+      resolved.add(frontBest);
+    }
+    resolved = _applyFifaCollageEvidenceFilter(
+      resolved,
+      normalized,
+      scrubbedRaw,
+      rawUpper,
+    );
+    if (resolved.isEmpty) {
+      resolved = List<StickerModel>.from(frontCollage);
+    }
+    final first = resolved.first;
+    final firstNum =
+        first.localNumber ?? int.tryParse(first.code.split(RegExp(r'\s+')).last) ?? 0;
+    final conf = resolved.length == 1 ? 0.88 : 0.86;
+    return StickerOcrFullResult(
+      inferredSide: StickerScanImageSide.front,
+      resolvedStickers: resolved,
+      primaryDetection: OcrStickerDetection(
+        countryCode: first.teamId,
+        stickerNumber: firstNum,
+        code: first.code,
+        type: OcrStickerDetection.fromStickerModelType(first.type),
+        confidence: conf,
+        detectionSource: _frontMultiPlayerSource(resolved),
+        needsManualReview: conf < kOcrMinConfidenceToAutoAdd,
+      ),
+    );
+  }
+
+  /// Equipo dominante en jugadores del frente (1 jugador → su país; varios → ≥70 % mismo team).
+  String? _dominantTeamFromFrontPlayers(List<StickerModel> frontCollage) {
+    final players =
+        frontCollage.where((s) => s.type == StickerType.player).toList();
+    if (players.isEmpty) return null;
+    if (players.length == 1) {
+      return players.first.teamId.toUpperCase();
+    }
+    final byTeam = <String, int>{};
+    for (final p in players) {
+      final t = p.teamId.toUpperCase();
+      byTeam[t] = (byTeam[t] ?? 0) + 1;
+    }
+    var bestTeam = '';
+    var bestCount = 0;
+    byTeam.forEach((t, n) {
+      if (n > bestCount) {
+        bestCount = n;
+        bestTeam = t;
+      }
+    });
+    if (bestTeam.isEmpty) return null;
+    if (bestCount / players.length >= 0.7) return bestTeam;
+    return null;
+  }
+
   /// Collage FIFA: reversos anclados + jugadores (exact/fuzzy). Si [requireFrontMatches]
   /// es false, solo reversos (p. ej. varias láminas de reverso sin nombres legibles).
   StickerOcrFullResult? _tryFifaAndFrontCollage({
@@ -443,8 +566,12 @@ class StickerOcrResolver {
     final first = resolved.first;
     final firstNum =
         first.localNumber ?? int.tryParse(first.code.split(RegExp(r'\s+')).last) ?? 0;
+    final prioritizeFront =
+        requireFrontMatches && frontCollage.isNotEmpty;
     return StickerOcrFullResult(
-      inferredSide: StickerScanImageSide.unknown,
+      inferredSide: prioritizeFront
+          ? StickerScanImageSide.front
+          : StickerScanImageSide.unknown,
       resolvedStickers: resolved,
       primaryDetection: OcrStickerDetection(
         countryCode: first.teamId,
@@ -452,9 +579,14 @@ class StickerOcrResolver {
         code: first.code,
         type: OcrStickerDetection.fromStickerModelType(first.type),
         confidence: requireFrontMatches ? 0.89 : 0.9,
-        detectionSource: requireFrontMatches
-            ? OcrDetectionSource.combined
-            : OcrDetectionSource.backText,
+        detectionSource: !requireFrontMatches
+            ? OcrDetectionSource.backText
+            : prioritizeFront
+                ? _frontMultiPlayerSource(
+                    resolved,
+                    nonMultiAllPlayersSource: OcrDetectionSource.playerMatch,
+                  )
+                : OcrDetectionSource.combined,
         needsManualReview: false,
       ),
     );
@@ -587,46 +719,81 @@ class StickerOcrResolver {
         .length;
   }
 
-  /// Ocurrencias no solapadas de [needle] en [upper] (pie FIFA repetido por lámina).
-  int _countDisjointSubstrings(String upper, String needle) {
-    if (needle.isEmpty) return 0;
-    var n = 0;
-    var from = 0;
-    while (true) {
-      final i = upper.indexOf(needle, from);
-      if (i < 0) break;
-      n++;
-      from = i + needle.length;
-    }
-    return n;
-  }
-
-  /// Tope de láminas físicas en reverso: líneas OCR si hay varias; si no, anclas `CUP 2026`.
-  int _inferBackStickerCapFromOcr(String rawOcrText) {
-    final upper = rawOcrText.toUpperCase();
+  /// Tope de láminas físicas: varias líneas → conteo de líneas; una sola línea →
+  /// histograma de pares anclados y tope por tipo (`perTypeCap`) para no explotar
+  /// con ruido ni perder duplicados reales moderados.
+  int _inferBackStickerCapFromOcr(
+    String rawOcrText,
+    String normalizedUpper,
+    int rawBackMatchesCount,
+  ) {
     final lines = _meaningfulOcrLineCount(rawOcrText);
-    var cup = _countDisjointSubstrings(upper, 'CUP 2026');
-    if (cup == 0) {
-      cup = _countDisjointSubstrings(upper, 'WORLD CUP 2026');
+    if (lines >= 2) {
+      return lines.clamp(1, 60);
     }
-    var cap = lines >= 2 ? lines : math.max(1, cup);
-    cap = cap.clamp(1, 60);
-    return cap;
+    final pairs =
+        Fifa2026BackOcrParser.extractFifaStyleCodesAnchoredNearCup2026(normalizedUpper);
+    final pairCounts = <String, int>{};
+    for (final p in pairs) {
+      final k = '${p.code}|${p.number}';
+      pairCounts[k] = (pairCounts[k] ?? 0) + 1;
+    }
+    final uniquePairs = pairCounts.length;
+    if (uniquePairs == 0) {
+      final fallback = math.min(30, math.max(1, rawBackMatchesCount));
+      if (kDebugMode) {
+        debugPrint(
+          '[BackMatcherCap] pairHistogram={} uniquePairs=0 perTypeCap=n/a '
+          'estimatedPhysicalCap=n/a finalBackStickerCap=$fallback (sin pares anclados)',
+        );
+      }
+      return fallback.clamp(1, 60);
+    }
+    final perTypeCap = uniquePairs >= 6 ? 2 : 3;
+    var estimatedPhysicalCount = 0;
+    for (final c in pairCounts.values) {
+      estimatedPhysicalCount += math.min(c, perTypeCap);
+    }
+    var cap = math.min(
+      rawBackMatchesCount,
+      math.min(estimatedPhysicalCount, 30),
+    );
+    if (cap < uniquePairs) {
+      cap = uniquePairs;
+    }
+    if (kDebugMode) {
+      final sorted = pairCounts.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+      final pairHistogram = sorted.map((e) => '${e.key}:${e.value}').join(', ');
+      debugPrint('[BackMatcherCap] pairHistogram={$pairHistogram}');
+      debugPrint('[BackMatcherCap] uniquePairs=$uniquePairs perTypeCap=$perTypeCap');
+      debugPrint(
+        '[BackMatcherCap] estimatedPhysicalCap=$estimatedPhysicalCount '
+        'finalBackStickerCap=$cap',
+      );
+    }
+    return cap.clamp(1, 60);
   }
 
   /// Evita explosión cuando el OCR repite el mismo bloque FIFA muchas veces.
   List<StickerModel> _compressFifaBackMatchesIfNeeded(
     List<StickerModel> raw,
     String rawOcrText,
+    String normalizedUpper,
   ) {
     final rawCount = raw.length;
-    final cap = _inferBackStickerCapFromOcr(rawOcrText);
-    final shouldCompress = rawCount > 30 || rawCount > cap * 2;
+    final cap = _inferBackStickerCapFromOcr(rawOcrText, normalizedUpper, rawCount);
+    final shouldCompress =
+        rawCount > 30 || rawCount > cap * 2 || rawCount > cap;
     if (!shouldCompress) {
       if (kDebugMode) {
         debugPrint('[BackMatcher] rawBackMatchesCount=$rawCount');
         debugPrint('[BackMatcher] compressedBackMatchesCount=$rawCount');
         debugPrint('[BackMatcher] compressionApplied=false backStickerCap=$cap');
+        debugPrint(
+          '[BackMatcherDebug] meaningfulLineCount=${_meaningfulOcrLineCount(rawOcrText)} '
+          'backStickerCap=$cap',
+        );
       }
       return raw;
     }
@@ -640,6 +807,16 @@ class StickerOcrResolver {
       debugPrint('[BackMatcher] rawBackMatchesCount=$rawCount');
       debugPrint('[BackMatcher] compressedBackMatchesCount=${out.length}');
       debugPrint('[BackMatcher] compressionApplied=true backStickerCap=$cap');
+      final anchored = Fifa2026BackOcrParser.extractFifaStyleCodesAnchoredNearCup2026(
+        normalizedUpper,
+      );
+      final uniqueN = anchored.map((p) => '${p.code}|${p.number}').toSet().length;
+      debugPrint(
+        '[BackMatcherDebug] meaningfulLineCount=${_meaningfulOcrLineCount(rawOcrText)} '
+        'uniqueAnchoredPairs=$uniqueN backStickerCap=$cap '
+        'compressedBackMatchesCount=${out.length} '
+        'finalBackMatchesIds=${out.map((e) => e.id).join(",")}',
+      );
     }
     return out;
   }

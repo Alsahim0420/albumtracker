@@ -198,6 +198,8 @@ class FrontStickerMatcher {
         .toList(growable: false);
 
     List<StickerModel>? greedyResult;
+    var greedyExactIdsRun = const <String>[];
+    var greedyFuzzyAcceptedIdsRun = const <String>[];
     if (wordList.length >= 8 &&
         !requireExplicitFullPlayerNameInBlob &&
         players.isNotEmpty) {
@@ -205,12 +207,15 @@ class FrontStickerMatcher {
       if (greedyPool.isNotEmpty) {
         final greedyMinScore =
             (multiLineScan || wordList.length >= 12) ? 0.82 : _autoAddThreshold;
-        greedyResult = _greedyPlayerSpansFromWords(
+        final greedyPack = _greedyPlayerSpansFromWords(
           wordList,
           greedyPool,
           teamHints,
           minScore: greedyMinScore,
         );
+        greedyResult = greedyPack.stickers;
+        greedyExactIdsRun = greedyPack.greedyExactIds;
+        greedyFuzzyAcceptedIdsRun = greedyPack.fuzzyAcceptedIds;
       }
     }
 
@@ -226,7 +231,31 @@ class FrontStickerMatcher {
       );
     }
 
-    final out = List<StickerModel>.from(ordered);
+    var out = List<StickerModel>.from(ordered);
+
+    if (greedyResult != null && greedyExactIdsRun.isNotEmpty) {
+      final allowed = <String>{
+        for (final s in greedyResult) s.id,
+        ...greedyExactIdsRun,
+        ...greedyFuzzyAcceptedIdsRun,
+      };
+      final dominant = _dominantTeamIdFromStickers(greedyResult);
+      if (dominant != null) {
+        final shortMonoRejected = _stickerIdsRejectedShortMonoThisRun();
+        for (final s in strict) {
+          if (s.teamId.toUpperCase() != dominant) continue;
+          if (shortMonoRejected.contains(s.id)) continue;
+          allowed.add(s.id);
+        }
+      }
+      final filteredOut = out.where((s) => !allowed.contains(s.id)).map((s) => s.id).toSet();
+      if (filteredOut.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint('[FrontMatcher] filteredOutIds=${filteredOut.join(",")}');
+        }
+        out = out.where((s) => allowed.contains(s.id)).toList();
+      }
+    }
 
     if (kDebugMode) {
       debugPrint('[FrontMatcher] linesCount=${lines.length} wordCount=${wordList.length}');
@@ -337,13 +366,24 @@ class FrontStickerMatcher {
   /// El índice [i] avanza de uno en uno; las palabras cubiertas por un span aceptado
   /// se marcan en [consumed] para no reutilizarlas, sin saltar al final del span
   /// (evita perder coincidencias que empiezan en tokens intermedios).
-  List<StickerModel> _greedyPlayerSpansFromWords(
+  /// [greedyExactIds]: spans exactos; [fuzzyAcceptedIds]: spans fuzzy del mismo barrido.
+  ({
+    List<StickerModel> stickers,
+    List<String> greedyExactIds,
+    List<String> fuzzyAcceptedIds,
+  }) _greedyPlayerSpansFromWords(
     List<String> words,
     List<StickerModel> spanCandidates,
     Map<String, _TeamHint> teamHints, {
     double minScore = _autoAddThreshold,
   }) {
-    if (spanCandidates.isEmpty) return [];
+    if (spanCandidates.isEmpty) {
+      return (
+        stickers: <StickerModel>[],
+        greedyExactIds: <String>[],
+        fuzzyAcceptedIds: <String>[],
+      );
+    }
 
     final out = <StickerModel>[];
     final greedyExactIds = <String>[];
@@ -446,6 +486,43 @@ class FrontStickerMatcher {
       debugPrint('[FrontMatcher] fuzzyAcceptedIds=${fuzzyAcceptedIds.join(",")}');
     }
 
+    return (
+      stickers: out,
+      greedyExactIds: greedyExactIds,
+      fuzzyAcceptedIds: List<String>.from(fuzzyAcceptedIds),
+    );
+  }
+
+  /// Equipo más frecuente en la salida greedy (p. ej. todo MEX en una foto).
+  String? _dominantTeamIdFromStickers(List<StickerModel> stickers) {
+    if (stickers.isEmpty) return null;
+    final counts = <String, int>{};
+    for (final s in stickers) {
+      final t = s.teamId.toUpperCase();
+      counts[t] = (counts[t] ?? 0) + 1;
+    }
+    var best = '';
+    var bestN = 0;
+    counts.forEach((k, v) {
+      if (v > bestN) {
+        bestN = v;
+        best = k;
+      }
+    });
+    return best.isEmpty ? null : best;
+  }
+
+  /// Ids con rechazo monónimo corto en esta corrida (no reinyectar desde strict).
+  Set<String> _stickerIdsRejectedShortMonoThisRun() {
+    final out = <String>{};
+    for (final e in _shortAliasRejectLog) {
+      final pipe = e.indexOf('|');
+      if (pipe <= 0) continue;
+      final reason = e.substring(pipe + 1);
+      if (reason.startsWith('shortMono:')) {
+        out.add(e.substring(0, pipe));
+      }
+    }
     return out;
   }
 

@@ -2,6 +2,8 @@
 
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
+
 import '../models/group_model.dart';
 import '../models/sticker_model.dart';
 import '../models/team_model.dart';
@@ -151,19 +153,49 @@ class WorldCup2026Seed {
   /// frente de la lámina con "LIONEL MESSI", etc.). Coincide con el plantel del seed
   /// actual (p. ej. Mundial 2026), no con otra edición salvo que el nombre sea igual.
   ///
-  /// Solo **substring** exacto tras [normalizeTextForPlayerNameMatch]. Para OCR
-  /// con errores de tipografía Panini, el dominio aplica fuzzy aparte.
+  /// Monónimos: palabra completa en el blob; nombres de 2+ palabras: subcadena
+  /// (comportamiento previo). El fuzzy sigue en el dominio OCR aparte.
   static List<StickerModel> findStickersByPlayerNamesInText(String rawOcrText) {
     final blob = normalizeTextForPlayerNameMatch(rawOcrText);
     if (blob.length < 4) return [];
     _ensurePlayerNameSearchList();
     final found = <String, StickerModel>{};
     for (final e in _playerNameSearchEntries!) {
-      if (blob.contains(e.key)) {
+      final key = e.key;
+      if (_playerNameSearchKeyMatchesInNormalizedBlob(key, blob)) {
         found[e.value.id] = e.value;
+      } else {
+        _debugLogSingleWordRejectedInsideLongToken(key, blob, e.value.id);
       }
     }
     return found.values.toList(growable: false);
+  }
+
+  static bool _playerNameSearchKeyMatchesInNormalizedBlob(String key, String blob) {
+    final trimmed = key.trim();
+    if (trimmed.isEmpty) return false;
+    final isMultiWord = trimmed.contains(RegExp(r'\s'));
+    if (isMultiWord) {
+      return blob.contains(trimmed);
+    }
+    return RegExp(
+      r'(^|\s)' + RegExp.escape(trimmed) + r'(\s|$)',
+    ).hasMatch(blob);
+  }
+
+  static void _debugLogSingleWordRejectedInsideLongToken(
+    String key,
+    String blob,
+    String stickerId,
+  ) {
+    if (!kDebugMode) return;
+    final trimmed = key.trim();
+    if (trimmed.isEmpty || trimmed.contains(RegExp(r'\s'))) return;
+    if (!blob.contains(trimmed)) return;
+    if (RegExp(r'(^|\s)' + RegExp.escape(trimmed) + r'(\s|$)').hasMatch(blob)) {
+      return;
+    }
+    debugPrint('singleWordExactRejectedInsideLongToken=$stickerId');
   }
 
   static TeamModel? getTeamById(String id) {
