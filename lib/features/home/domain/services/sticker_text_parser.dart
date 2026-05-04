@@ -5,9 +5,6 @@ class StickerTextParser {
   static final RegExp _alphaNumericPattern = RegExp(
     r'\b[A-Z]{2,4}(?:-[A-Z0-9]{1,4}){1,3}\b',
   );
-  static final RegExp _compactTeamNumberPattern = RegExp(
-    r'\b([A-Z]{3})(\d{1,2})\b',
-  );
 
   /// Códigos de una letra + dígitos (reverso lámina Qatar 2022: C1, C2, …).
   static final RegExp _letterDigitCode = RegExp(r'\b[A-Z]\d{1,2}\b');
@@ -26,7 +23,8 @@ class StickerTextParser {
   }
 
   /// Orden: primero códigos letra+dígito (evita confundir "3" de +3 con número global 3),
-  /// luego códigos con guiones, compactos por equipo, y por último números (globales largos antes que cortos).
+  /// luego códigos con guiones y por último números (globales largos antes que cortos).
+  /// No se infieren códigos `XXXNN` pegados: el álbum usa `XXX NN` con espacio.
   List<String> extractCandidates(String normalizedText) {
     final seen = <String>{};
     final ordered = <String>[];
@@ -44,12 +42,6 @@ class StickerTextParser {
     }
     for (final match in _alphaNumericPattern.allMatches(normalizedText)) {
       add(match.group(0));
-    }
-    for (final match in _compactTeamNumberPattern.allMatches(normalizedText)) {
-      final team = match.group(1)!;
-      final number = match.group(2)!.padLeft(2, '0');
-      add('$team-$number');
-      add('$team-PL-$number');
     }
 
     final numericHits = _numericPattern

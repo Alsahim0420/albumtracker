@@ -150,6 +150,9 @@ class WorldCup2026Seed {
   /// Busca láminas de jugador cuyo nombre completo aparece en el texto OCR (foto del
   /// frente de la lámina con "LIONEL MESSI", etc.). Coincide con el plantel del seed
   /// actual (p. ej. Mundial 2026), no con otra edición salvo que el nombre sea igual.
+  ///
+  /// Solo **substring** exacto tras [normalizeTextForPlayerNameMatch]. Para OCR
+  /// con errores de tipografía Panini, el dominio aplica fuzzy aparte.
   static List<StickerModel> findStickersByPlayerNamesInText(String rawOcrText) {
     final blob = normalizeTextForPlayerNameMatch(rawOcrText);
     if (blob.length < 4) return [];

@@ -38,7 +38,7 @@ class StickerImageSideDetector {
     }
 
     final codes = _backParser.extractStructuredCodes(normalizedUpperText);
-    if (_hasValidBackCode(codes)) {
+    if (_hasValidBackCode(codes, normalizedUpperText)) {
       return StickerScanImageSide.back;
     }
 
@@ -49,13 +49,26 @@ class StickerImageSideDetector {
     return StickerScanImageSide.unknown;
   }
 
-  bool _hasValidBackCode(List<String> codes) {
+  bool _hasValidBackCode(List<String> codes, String normalizedUpperText) {
+    final fifaContext =
+        Fifa2026BackOcrParser.isFifaWorldCup2026BackText(normalizedUpperText);
     for (final code in codes) {
       final sticker = WorldCup2026Seed.getStickerByFlexibleIdentifier(code);
       if (sticker == null) continue;
       if (sticker.type == StickerType.special) continue;
+      if (!fifaContext && _looksLikeThreeLetterTeamSlotCode(code)) {
+        continue;
+      }
       return true;
     }
+    return false;
+  }
+
+  /// Códigos tipo `POR-20` / `MAR-05` derivados de `POR 20` en promo/club sin pie FIFA.
+  bool _looksLikeThreeLetterTeamSlotCode(String code) {
+    final n = WorldCup2026Seed.normalizeStickerIdentifier(code);
+    if (RegExp(r'^[A-Z]{3}-PL-\d{2}$').hasMatch(n)) return true;
+    if (RegExp(r'^[A-Z]{3}-\d{2}$').hasMatch(n)) return true;
     return false;
   }
 

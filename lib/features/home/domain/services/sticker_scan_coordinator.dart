@@ -4,6 +4,7 @@ import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/features/home/data/services/sticker_ocr_service.dart';
 import 'package:albumtracker/features/home/domain/entities/ocr_sticker_detection.dart';
 import 'package:albumtracker/features/home/domain/entities/sticker_scan_image_side.dart';
+import 'package:albumtracker/features/home/domain/services/sticker_matcher_service.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_ocr_resolver.dart';
 
 /// Orquesta OCR → lado → estrategia.
@@ -29,6 +30,7 @@ class StickerScanCoordinator {
     final side = full.inferredSide;
     final stickers = full.resolvedStickers;
     final ocr = full.primaryDetection;
+    final rejectedMatchLog = StickerMatcherService.takeRejectedMatchLog();
     if (kDebugMode) {
       final shortPath = imagePath.split(RegExp(r'[/\\]')).last;
       debugPrint('[StickerScan] archivo: $shortPath');
@@ -38,6 +40,9 @@ class StickerScanCoordinator {
       debugPrint(
         '[StickerScan] matches (${stickers.length}): ${stickers.map((s) => s.id).join(", ")}',
       );
+      for (final line in rejectedMatchLog) {
+        debugPrint('[StickerScan] rejectedMatch: $line');
+      }
     }
 
     return StickerScanPipelineResult(
@@ -49,6 +54,7 @@ class StickerScanCoordinator {
       canAutoAdd: full.canAutoAdd,
       ocrDetection: ocr,
       detectedHint: ocr.code ?? (stickers.isNotEmpty ? stickers.first.code : null),
+      rejectedMatchLog: rejectedMatchLog,
     );
   }
 }
@@ -63,6 +69,7 @@ class StickerScanPipelineResult {
     required this.canAutoAdd,
     required this.ocrDetection,
     required this.detectedHint,
+    this.rejectedMatchLog = const [],
   });
 
   final String imagePath;
@@ -74,4 +81,6 @@ class StickerScanPipelineResult {
   final bool canAutoAdd;
   final OcrStickerDetection ocrDetection;
   final String? detectedHint;
+  /// Líneas de depuración: candidatos descartados (p. ej. país de club vs. lámina).
+  final List<String> rejectedMatchLog;
 }

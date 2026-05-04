@@ -10,6 +10,7 @@ import 'package:albumtracker/features/home/domain/services/ocr/shield_captured_i
 import 'package:albumtracker/features/home/domain/services/ocr/special_sticker_ocr_heuristic.dart';
 import 'package:albumtracker/features/home/domain/services/ocr/we_are_front_country_parser.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_image_side_detector.dart';
+import 'package:albumtracker/features/home/domain/services/sticker_matcher_service.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_text_parser.dart';
 
 /// No auto-añadir por debajo de este umbral.
@@ -54,7 +55,11 @@ class StickerOcrResolver {
     required String imagePath,
     required String rawOcrText,
   }) async {
+    StickerMatcherService.clearRejectedMatchLog();
     final normalized = textParser.normalizeRawText(rawOcrText);
+    final hasFifa = Fifa2026BackOcrParser.isFifaWorldCup2026BackText(normalized);
+    final scrubbedRaw = StickerMatcherService.stripClubNationHintsForOcr(rawOcrText);
+    final rawUpper = rawOcrText.toUpperCase();
     final we = weAre.teamCodeFromNormalizedOcr(normalized);
     final hasOfficialHeader =
         normalized.contains('FIFA') &&
@@ -72,52 +77,66 @@ class StickerOcrResolver {
     }
 
     final multiBack = _resolveAllFifa2026BackStickers(normalized);
-    if (multiBack.length >= 2) {
-      final front = frontMatcher.matchAllWithCountryInText(rawOcrText);
-      final byId = <String, StickerModel>{};
-      for (final s in multiBack) {
-        byId[s.id] = s;
-      }
-      for (final s in front) {
-        byId[s.id] = s;
-      }
-      // Fallback adicional para fotos mixtas (frentes + reversos en una sola toma):
-      // intenta rescatar 1 jugador frontal con mejor esfuerzo si no entró en matchAll.
-      final frontBest = frontMatcher.matchSingleBestEffort(rawOcrText);
-      if (frontBest != null) {
-        byId[frontBest.id] = frontBest;
-      }
-      final resolved = byId.values.toList(growable: false)
-        ..sort((a, b) {
-          final ga = a.globalNumber ?? (1 << 30);
-          final gb = b.globalNumber ?? (1 << 30);
-          final c = ga.compareTo(gb);
-          if (c != 0) return c;
-          return a.id.compareTo(b.id);
-        });
-      final first = resolved.first;
-      final firstNum = int.tryParse(first.code.split(' ').last) ?? 1;
-      return StickerOcrFullResult(
-        inferredSide: StickerScanImageSide.unknown,
-        resolvedStickers: resolved,
-        primaryDetection: OcrStickerDetection(
-          countryCode: first.teamId,
-          stickerNumber: firstNum,
-          code: first.code,
-          type: OcrStickerDetection.fromStickerModelType(first.type),
-          confidence: 0.9,
-          detectionSource: OcrDetectionSource.backText,
-          needsManualReview: false,
-        ),
-      );
+    final fifaPath = _resolveFifa2026BackPath(normalized);
+    final frontCollage = frontMatcher.matchAllWithCountryInText(
+      rawOcrText,
+      requireExplicitFullPlayerNameInBlob: hasFifa,
+    );
+    final frontBestCollage = hasFifa
+        ? frontMatcher.matchSingleBestEffort(
+            rawOcrText,
+            requireExplicitFullPlayerNameInBlob: true,
+          )
+        : null;
+
+    final hybridMulti = _tryFifaAndFrontCollage(
+      hasFifa: hasFifa,
+      backs: multiBack,
+      frontCollage: frontCollage,
+      frontBest: frontBestCollage,
+      normalized: normalized,
+      scrubbedRaw: scrubbedRaw,
+      rawUpper: rawUpper,
+      requireFrontMatches: true,
+    );
+    if (hybridMulti != null) {
+      return hybridMulti;
     }
 
-    final fifa1 = _resolveFifa2026BackPath(normalized);
-    if (fifa1 != null) {
+    if (multiBack.length >= 2) {
+      final backsOnly = _tryFifaAndFrontCollage(
+        hasFifa: hasFifa,
+        backs: multiBack,
+        frontCollage: frontCollage,
+        frontBest: null,
+        normalized: normalized,
+        scrubbedRaw: scrubbedRaw,
+        rawUpper: rawUpper,
+        requireFrontMatches: false,
+      );
+      if (backsOnly != null) {
+        return backsOnly;
+      }
+    }
+
+    if (fifaPath != null) {
+      final hybridSingle = _tryFifaAndFrontCollage(
+        hasFifa: hasFifa,
+        backs: [fifaPath.$1],
+        frontCollage: frontCollage,
+        frontBest: frontBestCollage,
+        normalized: normalized,
+        scrubbedRaw: scrubbedRaw,
+        rawUpper: rawUpper,
+        requireFrontMatches: true,
+      );
+      if (hybridSingle != null) {
+        return hybridSingle;
+      }
       return StickerOcrFullResult(
         inferredSide: StickerScanImageSide.back,
-        resolvedStickers: [fifa1.$1],
-        primaryDetection: fifa1.$2,
+        resolvedStickers: [fifaPath.$1],
+        primaryDetection: fifaPath.$2,
       );
     }
 
@@ -125,7 +144,10 @@ class StickerOcrResolver {
       // En collages del frente puede haber varias láminas: jugadores + "WE ARE ...".
       // Construimos un set combinado para no quedarnos solo con una detección temprana.
       final byId = <String, StickerModel>{};
-      final front = frontMatcher.matchAllWithCountryInText(rawOcrText);
+      final front = frontMatcher.matchAllWithCountryInText(
+        rawOcrText,
+        requireExplicitFullPlayerNameInBlob: hasFifa,
+      );
       for (final s in front) {
         byId[s.id] = s;
       }
@@ -168,7 +190,7 @@ class StickerOcrResolver {
             code: first.code,
             type: OcrStickerDetection.fromStickerModelType(first.type),
             confidence: conf,
-            detectionSource: OcrDetectionSource.frontText,
+            detectionSource: _frontMultiPlayerSource(resolved),
             needsManualReview: conf < kOcrMinConfidenceToAutoAdd,
           ),
         );
@@ -222,7 +244,10 @@ class StickerOcrResolver {
     }
 
     if (we != null) {
-      final front = frontMatcher.matchAllWithCountryInText(rawOcrText);
+      final front = frontMatcher.matchAllWithCountryInText(
+        rawOcrText,
+        requireExplicitFullPlayerNameInBlob: hasFifa,
+      );
       if (front.isNotEmpty) {
         var conf = 0.83;
         if (we == front.first.teamId) {
@@ -239,7 +264,7 @@ class StickerOcrResolver {
             code: first.code,
             type: OcrStickerDetection.fromStickerModelType(first.type),
             confidence: conf,
-            detectionSource: OcrDetectionSource.frontText,
+            detectionSource: _frontMultiPlayerSource(front),
             needsManualReview: conf < kOcrMinConfidenceToAutoAdd,
           ),
         );
@@ -267,7 +292,10 @@ class StickerOcrResolver {
     }
 
     if (side == StickerScanImageSide.front) {
-      final f = frontMatcher.matchAllWithCountryInText(rawOcrText);
+      final f = frontMatcher.matchAllWithCountryInText(
+        rawOcrText,
+        requireExplicitFullPlayerNameInBlob: hasFifa,
+      );
       if (f.isNotEmpty) {
         final t = f.first;
         final n = int.tryParse(t.code.split(' ').last) ?? 1;
@@ -284,12 +312,18 @@ class StickerOcrResolver {
             code: t.code,
             type: OcrStickerDetection.fromStickerModelType(t.type),
             confidence: conf,
-            detectionSource: OcrDetectionSource.legacyFront,
+            detectionSource: _frontMultiPlayerSource(
+              f,
+              nonMultiAllPlayersSource: OcrDetectionSource.legacyFront,
+            ),
             needsManualReview: conf < kOcrMinConfidenceToAutoAdd,
           ),
         );
       }
-      final one = frontMatcher.matchSingleBestEffort(rawOcrText);
+      final one = frontMatcher.matchSingleBestEffort(
+        rawOcrText,
+        requireExplicitFullPlayerNameInBlob: hasFifa,
+      );
       if (one != null) {
         final n = int.tryParse(one.code.split(' ').last) ?? 1;
         const conf = 0.86;
@@ -374,6 +408,123 @@ class StickerOcrResolver {
     );
   }
 
+  /// Collage FIFA: reversos anclados + jugadores (exact/fuzzy). Si [requireFrontMatches]
+  /// es false, solo reversos (p. ej. varias láminas de reverso sin nombres legibles).
+  StickerOcrFullResult? _tryFifaAndFrontCollage({
+    required bool hasFifa,
+    required List<StickerModel> backs,
+    required List<StickerModel> frontCollage,
+    required StickerModel? frontBest,
+    required String normalized,
+    required String scrubbedRaw,
+    required String rawUpper,
+    required bool requireFrontMatches,
+  }) {
+    if (!hasFifa || backs.isEmpty) return null;
+    if (requireFrontMatches && frontCollage.isEmpty) return null;
+
+    final byId = <String, StickerModel>{};
+    for (final s in backs) {
+      byId[s.id] = s;
+    }
+    if (requireFrontMatches) {
+      for (final s in frontCollage) {
+        byId[s.id] = s;
+      }
+      if (frontBest != null) {
+        byId[frontBest.id] = frontBest;
+      }
+    }
+
+    var resolved = byId.values.toList(growable: false)
+      ..sort((a, b) {
+        final ga = a.globalNumber ?? (1 << 30);
+        final gb = b.globalNumber ?? (1 << 30);
+        final c = ga.compareTo(gb);
+        if (c != 0) return c;
+        return a.id.compareTo(b.id);
+      });
+    resolved = _applyFifaCollageEvidenceFilter(
+      resolved,
+      normalized,
+      scrubbedRaw,
+      rawUpper,
+    );
+    if (resolved.isEmpty) return null;
+    final first = resolved.first;
+    final firstNum =
+        first.localNumber ?? int.tryParse(first.code.split(RegExp(r'\s+')).last) ?? 0;
+    return StickerOcrFullResult(
+      inferredSide: StickerScanImageSide.unknown,
+      resolvedStickers: resolved,
+      primaryDetection: OcrStickerDetection(
+        countryCode: first.teamId,
+        stickerNumber: firstNum,
+        code: first.code,
+        type: OcrStickerDetection.fromStickerModelType(first.type),
+        confidence: requireFrontMatches ? 0.89 : 0.9,
+        detectionSource: requireFrontMatches
+            ? OcrDetectionSource.combined
+            : OcrDetectionSource.backText,
+        needsManualReview: false,
+      ),
+    );
+  }
+
+  /// Quita jugadores/escudos sin ancla FIFA fuerte en collages (p. ej. GER por club).
+  List<StickerModel> _applyFifaCollageEvidenceFilter(
+    List<StickerModel> resolved,
+    String normalizedUpper,
+    String scrubbedRaw,
+    String rawUpper,
+  ) {
+    final anchoredPairs =
+        Fifa2026BackOcrParser.extractFifaStyleCodesAnchoredNearCup2026(normalizedUpper);
+    bool slotAnchored(String teamId, int slot) {
+      final tid = teamId.toUpperCase();
+      return anchoredPairs.any((p) => p.code == tid && p.number == slot);
+    }
+
+    final out = <StickerModel>[];
+    for (final s in resolved) {
+      final slot = int.tryParse(s.code.split(' ').last) ?? 0;
+      final anchored = slotAnchored(s.teamId, slot);
+
+      if (s.type == StickerType.player) {
+        final nameOk =
+            StickerMatcherService.playerHasExplicitNameEvidence(s, scrubbedRaw);
+        if (nameOk || anchored) {
+          out.add(s);
+          continue;
+        }
+        final hadParen = StickerMatcherService.rawHadParentheticalClubCountry(
+          rawUpper,
+          s.teamId,
+        );
+        StickerMatcherService.logRejectedMatch(
+          s.id,
+          StickerMatcherService.buildPlayerRejectReason(
+            sticker: s,
+            hadClubCountryParen: hadParen,
+            hadNameEvidence: nameOk,
+            hadAuthoritativeBackCode: anchored,
+          ),
+        );
+        continue;
+      }
+
+      if (s.type == StickerType.badge || s.type == StickerType.team_photo) {
+        if (anchored) {
+          out.add(s);
+        }
+        continue;
+      }
+
+      out.add(s);
+    }
+    return out;
+  }
+
   (StickerModel, OcrStickerDetection)? _resolveFifa2026BackPath(
     String normalized,
   ) {
@@ -387,7 +538,7 @@ class StickerOcrResolver {
             OcrStickerDetection(
               countryCode: head.code,
               stickerNumber: head.number,
-              code: '${head.code} ${head.number}',
+              code: s0.code,
               type: OcrStickerDetection.fromStickerModelType(s0.type),
               confidence: 0.93,
               detectionSource: OcrDetectionSource.backText,
@@ -396,10 +547,12 @@ class StickerOcrResolver {
           );
         }
       }
-      for (final p
-          in Fifa2026BackOcrParser.extractFifaStyleCodes(
-            normalized,
-          ).reversed) {
+      final anchoredPairs =
+          Fifa2026BackOcrParser.extractFifaStyleCodesAnchoredNearCup2026(normalized);
+      final scanPairs = anchoredPairs.isNotEmpty
+          ? anchoredPairs
+          : Fifa2026BackOcrParser.extractFifaStyleCodes(normalized);
+      for (final p in scanPairs.reversed) {
         final s = _stickerByTeamSlot(p.code, p.number);
         if (s != null) {
           return (
@@ -407,7 +560,7 @@ class StickerOcrResolver {
             OcrStickerDetection(
               countryCode: p.code,
               stickerNumber: p.number,
-              code: '${p.code} ${p.number}',
+              code: s.code,
               type: OcrStickerDetection.fromStickerModelType(s.type),
               confidence: 0.9,
               detectionSource: OcrDetectionSource.backText,
@@ -418,32 +571,16 @@ class StickerOcrResolver {
       }
       return null;
     }
-    for (final p
-        in Fifa2026BackOcrParser.extractFifaStyleCodes(
-          normalized,
-        ).reversed) {
-      final s = _stickerByTeamSlot(p.code, p.number);
-      if (s != null) {
-        return (
-          s,
-          OcrStickerDetection(
-            countryCode: p.code,
-            stickerNumber: p.number,
-            code: '${p.code} ${p.number}',
-            type: OcrStickerDetection.fromStickerModelType(s.type),
-            confidence: 0.86,
-            detectionSource: OcrDetectionSource.backText,
-            needsManualReview: 0.86 < kOcrMinConfidenceToAutoAdd,
-          ),
-        );
-      }
-    }
     return null;
   }
 
   List<StickerModel> _resolveAllFifa2026BackStickers(String normalized) {
+    if (!Fifa2026BackOcrParser.isFifaWorldCup2026BackText(normalized)) {
+      return const [];
+    }
     final byId = <String, StickerModel>{};
-    final pairs = Fifa2026BackOcrParser.extractFifaStyleCodes(normalized);
+    final pairs =
+        Fifa2026BackOcrParser.extractFifaStyleCodesAnchoredNearCup2026(normalized);
     for (final p in pairs) {
       final s = _stickerByTeamSlot(p.code, p.number);
       if (s != null) {
@@ -475,5 +612,16 @@ class StickerOcrResolver {
       }
     }
     return _stickerByTeamSlot(teamFifa, 13);
+  }
+
+  /// Varios jugadores en frente → [OcrDetectionSource.playerMatch].
+  OcrDetectionSource _frontMultiPlayerSource(
+    List<StickerModel> resolved, {
+    OcrDetectionSource nonMultiAllPlayersSource = OcrDetectionSource.frontText,
+  }) {
+    if (resolved.length <= 1) return nonMultiAllPlayersSource;
+    final allPlayers = resolved.every((s) => s.type == StickerType.player);
+    if (allPlayers) return OcrDetectionSource.playerMatch;
+    return nonMultiAllPlayersSource;
   }
 }

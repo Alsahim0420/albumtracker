@@ -15,6 +15,8 @@ enum OcrLogicalStickerType {
 enum OcrDetectionSource {
   backText,
   frontText,
+  /// Varios jugadores resueltos por nombre en una misma imagen frontal.
+  playerMatch,
   shieldMatch,
   manualReview,
   specialDetection,

@@ -1,5 +1,7 @@
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
+import 'package:albumtracker/features/home/domain/services/ocr/player_name_ocr_fuzzy_match.dart';
+import 'package:albumtracker/features/home/domain/services/sticker_matcher_service.dart';
 
 /// Matching de frente: nombres del OCR frente al plantel + [StickerModel.teamId].
 class FrontStickerMatcher {
@@ -37,20 +39,27 @@ class FrontStickerMatcher {
   /// Además, si hay consenso de equipo, se intentan coincidencias por **fragmentos**
   /// únicos del nombre (p. ej. `meiners` → Teun Koopmeiners, `ligt` → Matthijs de Ligt)
   /// cuando el OCR parte o tuerce el nombre completo.
-  List<StickerModel> matchAllWithCountryInText(String rawOcrText) {
+  ///
+  /// [requireExplicitFullPlayerNameInBlob]: en collages con reverso FIFA en el mismo OCR,
+  /// solo se aceptan jugadores con nombre claramente legible (evita país de club + consenso).
+  List<StickerModel> matchAllWithCountryInText(
+    String rawOcrText, {
+    bool requireExplicitFullPlayerNameInBlob = false,
+  }) {
+    final scrubbed = StickerMatcherService.stripClubNationHintsForOcr(rawOcrText);
     final normalizedBlob = WorldCup2026Seed.normalizeTextForPlayerNameMatch(
-      rawOcrText,
+      scrubbed,
     );
     if (normalizedBlob.isEmpty) return [];
 
     _ensureTokenFrequencyAcrossPlayers();
-    final teamHints = _buildTeamHints(rawOcrText);
+    final teamHints = _buildTeamHints(scrubbed);
     final players = _allPlayerStickers();
-    final lines = _extractCandidateLines(rawOcrText);
+    final lines = _extractCandidateLines(scrubbed);
     final byId = <String, StickerModel>{};
 
     // 1) Match fuerte por nombre completo en todo el blob OCR.
-    final strict = WorldCup2026Seed.findStickersByPlayerNamesInText(rawOcrText);
+    final strict = PlayerNameOcrFuzzy.findPlayerStickersForOcrBlob(scrubbed);
     for (final s in strict) {
       byId[s.id] = s;
     }
@@ -87,7 +96,7 @@ class FrontStickerMatcher {
         .where((e) => e.value >= 2)
         .map((e) => e.key)
         .toSet();
-    if (consensusTeams.isNotEmpty) {
+    if (!requireExplicitFullPlayerNameInBlob && consensusTeams.isNotEmpty) {
       for (final line in lines) {
         for (final player in players.where(
           (p) => consensusTeams.contains(p.teamId) && !byId.containsKey(p.id),
@@ -107,7 +116,7 @@ class FrontStickerMatcher {
     // 4) Fallback de collage: si ya hubo varias detecciones, permitir agregar
     // jugadores por apellido largo/único detectado en el bloque OCR global.
     // Esto cubre OCR tipo "GUARDIOL" vs "GVARDIOL".
-    if (byId.length >= 4) {
+    if (!requireExplicitFullPlayerNameInBlob && byId.length >= 4) {
       final blobWords = normalizedBlob
           .split(' ')
           .where((w) => w.length >= 4)
@@ -143,6 +152,12 @@ class FrontStickerMatcher {
       }
     }
 
+    if (requireExplicitFullPlayerNameInBlob) {
+      byId.removeWhere(
+        (_, s) => !StickerMatcherService.playerHasExplicitNameEvidence(s, scrubbed),
+      );
+    }
+
     final out = byId.values.toList(growable: false);
     out.sort((a, b) {
       final ga = a.globalNumber ?? 1 << 30;
@@ -156,11 +171,15 @@ class FrontStickerMatcher {
 
   /// Fallback de alta tolerancia para OCR sucio de una sola lámina frontal.
   /// Retorna un único jugador cuando el top es claramente mejor que el segundo.
-  StickerModel? matchSingleBestEffort(String rawOcrText) {
+  StickerModel? matchSingleBestEffort(
+    String rawOcrText, {
+    bool requireExplicitFullPlayerNameInBlob = false,
+  }) {
+    final scrubbed = StickerMatcherService.stripClubNationHintsForOcr(rawOcrText);
     final players = _allPlayerStickers();
-    final lines = _extractCandidateLines(rawOcrText);
+    final lines = _extractCandidateLines(scrubbed);
     if (lines.isEmpty) return null;
-    final teamHints = _buildTeamHints(rawOcrText);
+    final teamHints = _buildTeamHints(scrubbed);
     final bestByPlayer = <String, _ScoredCandidate>{};
 
     for (final line in lines) {
@@ -187,6 +206,10 @@ class FrontStickerMatcher {
 
     // Umbral relajado para casos tipo MOHAMIMED/MOHAMMED.
     if (top.score >= 0.55 && delta >= 0.20) {
+      if (requireExplicitFullPlayerNameInBlob &&
+          !StickerMatcherService.playerHasExplicitNameEvidence(top.player, scrubbed)) {
+        return null;
+      }
       return top.player;
     }
     return null;
@@ -212,36 +235,22 @@ class FrontStickerMatcher {
     return out;
   }
 
-  Map<String, _TeamHint> _buildTeamHints(String rawOcrText) {
-    final upper = rawOcrText.toUpperCase();
-    final tokens = RegExp(r'[A-Z]{3,4}')
-        .allMatches(upper)
-        .map((m) => m.group(0)!)
-        .toList(growable: false);
+  Map<String, _TeamHint> _buildTeamHints(String rawOcrTextUpperStripped) {
+    final upper = rawOcrTextUpperStripped.toUpperCase();
     final out = <String, _TeamHint>{};
 
     for (final g in WorldCup2026Seed.groups) {
       for (final t in g.teams) {
         final tid = t.id.toUpperCase();
         if (tid.length != 3) continue;
+        // Solo palabra completa; nada de fuzzy por tokens (evita GER por ruido/club).
         final exact = RegExp(r'\b' + RegExp.escape(tid) + r'\b').hasMatch(upper);
-        final fuzzy = !exact &&
-            tokens.any((tk) => _looksLikeTeamCode(tid: tid, token: tk));
-        if (exact || fuzzy) {
-          out[tid] = _TeamHint(exact: exact, fuzzy: fuzzy);
+        if (exact) {
+          out[tid] = const _TeamHint(exact: true, fuzzy: false);
         }
       }
     }
     return out;
-  }
-
-  bool _looksLikeTeamCode({required String tid, required String token}) {
-    if (token == tid) return true;
-    if (token.length == 4 && (token.startsWith(tid) || token.endsWith(tid))) {
-      return true;
-    }
-    if (token.length != 3) return false;
-    return _levenshteinDistance(token, tid) <= 1;
   }
 
   double _scorePlayerLineMatch({
@@ -367,8 +376,8 @@ class FrontStickerMatcher {
   }
 
   double _normalizedSimilarity(String a, String b) {
-    final aa = _normalizeTokenForOcrConfusions(a);
-    final bb = _normalizeTokenForOcrConfusions(b);
+    final aa = PlayerNameOcrFuzzy.foldForPaniniOcrCompare(a);
+    final bb = PlayerNameOcrFuzzy.foldForPaniniOcrCompare(b);
     if (aa.isEmpty || bb.isEmpty) return 0;
     if (aa == bb) return 1;
     final d = _levenshteinDistance(aa, bb);
@@ -378,17 +387,6 @@ class FrontStickerMatcher {
     if (v < 0) return 0;
     if (v > 1) return 1;
     return v;
-  }
-
-  String _normalizeTokenForOcrConfusions(String input) {
-    return input
-        .toLowerCase()
-        // OCR frecuente en fotos: U y V se confunden fácilmente.
-        .replaceAll('u', 'v')
-        // En tomas inclinadas también aparece Y↔V (YERRY -> VERRY).
-        .replaceAll('y', 'v')
-        // En algunos OCR, l mayúscula y i también se mezclan.
-        .replaceAll('l', 'i');
   }
 
   int _levenshteinDistance(String a, String b) {
