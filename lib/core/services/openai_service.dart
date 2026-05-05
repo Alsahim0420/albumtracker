@@ -31,6 +31,12 @@ class OpenAIService {
       'Ejemplo: 10 cartas visibles → 10 líneas; si 3 son el mismo jugador, escribe su nombre 3 veces en 3 líneas. '
       'No agrupes, no resumas en "x3" y no omitas copias. '
       'Conserva saltos de línea entre cartas. No añadas comentarios ni explicaciones; solo el texto.';
+  static const _backCodePrompt =
+      'Extrae SOLO códigos de reverso de láminas FIFA 2026 con formato "XXX NN" '
+      '(ejemplos: ESP 8, IRN 16, COL 1, BEL 1). '
+      'Si hay varias láminas, devuelve una línea por lámina, en orden visual. '
+      'No incluyas texto adicional ni explicaciones. '
+      'Si no hay códigos legibles, responde vacío.';
 
   final http.Client _http;
 
@@ -44,7 +50,10 @@ class OpenAIService {
 
   /// Envía la imagen a GPT (visión) y devuelve texto plano para [StickerOcrResolver].
   /// Si falla la petición o la respuesta está vacía, devuelve cadena vacía (el llamador puede usar ML Kit).
-  Future<String> extractStickerTextFromImage(String imagePath) async {
+  Future<String> extractStickerTextFromImage(
+    String imagePath, {
+    String detail = 'low',
+  }) async {
     if (!isConfigured) return '';
 
     final file = File(imagePath);
@@ -67,22 +76,7 @@ class OpenAIService {
     final dataUrl = 'data:$mime;base64,$b64';
 
     final key = dotenv.env['OPENAI_API_KEY']!.trim();
-    final body = jsonEncode({
-      'model': _model,
-      'input': [
-        {
-          'role': 'user',
-          'content': [
-            {'type': 'input_text', 'text': _visionPrompt},
-            {
-              'type': 'input_image',
-              'image_url': dataUrl,
-              'detail': 'low',
-            },
-          ],
-        },
-      ],
-    });
+    final body = _buildVisionBody(dataUrl, _visionPrompt, detail: detail);
 
     try {
       final res = await _http
@@ -122,6 +116,93 @@ class OpenAIService {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[OpenAIService] extractStickerTextFromImage failed: $e\n$st');
+      }
+      return '';
+    }
+  }
+
+  Future<String> extractBackCodesFromImage(
+    String imagePath, {
+    String detail = 'high',
+  }) async {
+    if (!isConfigured) return '';
+
+    final file = File(imagePath);
+    if (!await file.exists()) return '';
+
+    final Uint8List bytes = await file.readAsBytes();
+    if (bytes.isEmpty || bytes.length > _maxImageBytes) return '';
+
+    final mime = _mimeTypeFromPath(imagePath);
+    final String b64 = bytes.lengthInBytes >= _base64IsolateThresholdBytes
+        ? await compute(_isolateBase64Encode, bytes)
+        : base64Encode(bytes);
+    final dataUrl = 'data:$mime;base64,$b64';
+    final body = _buildVisionBody(dataUrl, _backCodePrompt, detail: detail);
+    return _sendVisionRequest(body);
+  }
+
+  static String _buildVisionBody(
+    String dataUrl,
+    String prompt, {
+    String detail = 'low',
+  }) {
+    return jsonEncode({
+      'model': _model,
+      'input': [
+        {
+          'role': 'user',
+          'content': [
+            {'type': 'input_text', 'text': prompt},
+            {
+              'type': 'input_image',
+              'image_url': dataUrl,
+              'detail': detail,
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  Future<String> _sendVisionRequest(String body) async {
+    final key = dotenv.env['OPENAI_API_KEY']!.trim();
+    try {
+      final res = await _http
+          .post(
+            Uri.parse(_responsesUrl),
+            headers: {
+              'Authorization': 'Bearer $key',
+              'Content-Type': 'application/json',
+            },
+            body: body,
+          )
+          .timeout(_requestTimeout);
+
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        if (kDebugMode) {
+          debugPrint(
+            '[OpenAIService] vision HTTP ${res.statusCode} body=${res.body.length > 300 ? "${res.body.substring(0, 300)}…" : res.body}',
+          );
+        }
+        return '';
+      }
+
+      final decoded = jsonDecode(res.body);
+      if (decoded is! Map<String, dynamic>) return '';
+
+      final err = decoded['error'];
+      if (err != null) {
+        if (kDebugMode) debugPrint('[OpenAIService] API error: $err');
+        return '';
+      }
+
+      final text = _extractOutputText(decoded).trim();
+      if (text.length < 2) return '';
+      return text;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[OpenAIService] vision request failed: $e\n$st');
       }
       return '';
     }
