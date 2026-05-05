@@ -8,6 +8,32 @@ import 'package:http/http.dart' as http;
 /// Codificación base64 fuera del hilo UI (imágenes grandes bloquean el ticker).
 String _isolateBase64Encode(Uint8List bytes) => base64Encode(bytes);
 
+const Duration _connectivityTestTimeout = Duration(seconds: 15);
+
+/// Prueba genérica de salida a Internet (DNS + TLS).
+Future<void> testInternetConnection(http.Client httpClient) async {
+  try {
+    final response = await httpClient
+        .get(Uri.parse('https://www.google.com'))
+        .timeout(_connectivityTestTimeout);
+    debugPrint('[OCR_DEBUG] INTERNET_OK status=${response.statusCode}');
+  } catch (e) {
+    debugPrint('[OCR_DEBUG] INTERNET_FAIL error=$e');
+  }
+}
+
+/// Prueba resolución/conectividad al host de OpenAI (si falla aquí pero [testInternetConnection] OK → sospecha de DNS/firewall al dominio).
+Future<void> testOpenAiHostReachability(http.Client httpClient) async {
+  try {
+    final response = await httpClient
+        .get(Uri.parse('https://api.openai.com'))
+        .timeout(_connectivityTestTimeout);
+    debugPrint('[OCR_DEBUG] OPENAI_HOST_OK status=${response.statusCode}');
+  } catch (e) {
+    debugPrint('[OCR_DEBUG] OPENAI_HOST_FAIL error=$e');
+  }
+}
+
 /// Cliente OpenAI: visión sobre la foto del sticker → texto plano para el pipeline existente.
 ///
 /// La clave se lee de [dotenv] (`assets/.env`). Nunca hardcodear.
@@ -78,7 +104,11 @@ class OpenAIService {
     final key = dotenv.env['OPENAI_API_KEY']!.trim();
     final body = _buildVisionBody(dataUrl, _visionPrompt, detail: detail);
 
+    await testInternetConnection(_http);
+    await testOpenAiHostReachability(_http);
+
     try {
+      debugPrint('[OCR_DEBUG] OPENAI_REQUEST_START url=https://api.openai.com');
       final res = await _http
           .post(
             Uri.parse(_responsesUrl),
@@ -89,6 +119,10 @@ class OpenAIService {
             body: body,
           )
           .timeout(_requestTimeout);
+
+      debugPrint(
+        '[OCR_DEBUG] OPENAI_RESPONSE_RECEIVED statusCode=${res.statusCode}',
+      );
 
       if (res.statusCode < 200 || res.statusCode >= 300) {
         if (kDebugMode) {
@@ -114,6 +148,7 @@ class OpenAIService {
       if (text.length < 2) return '';
       return text;
     } catch (e, st) {
+      debugPrint('[OCR_DEBUG] OPENAI_NETWORK_ERROR error=$e');
       if (kDebugMode) {
         debugPrint('[OpenAIService] extractStickerTextFromImage failed: $e\n$st');
       }
