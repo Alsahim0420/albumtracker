@@ -49,5 +49,7 @@
 	<string>La cámara se utiliza para escanear stickers del álbum.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>La galería se utiliza para seleccionar imágenes con stickers.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
