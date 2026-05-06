@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/features/home/presentation/widgets/album_badge_flag_display.dart';
+import 'package:albumtracker/features/home/presentation/widgets/share_sticker_list_images.dart';
 import 'package:albumtracker/features/home/presentation/widgets/team_country_filter_widgets.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
@@ -21,6 +22,7 @@ class RepeatedStickersView extends StatefulWidget {
 class _RepeatedStickersViewState extends State<RepeatedStickersView> {
   /// null = All, otherwise country code (e.g. BRA).
   String? _selectedCountry;
+  bool _isSharingDuplicates = false;
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +31,7 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
       valueListenable: collectionBox.listenable(),
       builder: (context, box, _) {
         final map = collectedStickersMap;
-        final repeatedEntries =
-            map.entries.where((e) => e.value > 1).toList();
+        final repeatedEntries = map.entries.where((e) => e.value > 1).toList();
 
         if (repeatedEntries.isEmpty) {
           return _buildEmptyState(context);
@@ -51,10 +52,10 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
                   Text(
                     'homeFilterSwaps'.tr(),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: colors.onSurface,
-                        ),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -83,11 +84,36 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
                             'teamDetailDuplicates'.tr(
                               args: [totalDuplicates.toString()],
                             ),
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
                                   color: colors.onPrimaryContainer,
                                   fontWeight: FontWeight.w700,
                                 ),
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'shareRepeatedTooltip'.tr(),
+                          onPressed: _isSharingDuplicates
+                              ? null
+                              : () => _shareRepeatedStickers(
+                                  context,
+                                  repeatedEntries,
+                                  totalDuplicates,
+                                ),
+                          icon: _isSharingDuplicates
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colors.onPrimaryContainer,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.ios_share_rounded,
+                                  color: colors.onPrimaryContainer,
+                                ),
                         ),
                       ],
                     ),
@@ -107,7 +133,11 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
                   const crossCount = 3;
                   const padding = 16.0;
                   const spacing = 10.0;
-                  final width = (constraints.maxWidth - 2 * padding - (crossCount - 1) * spacing) / crossCount;
+                  final width =
+                      (constraints.maxWidth -
+                          2 * padding -
+                          (crossCount - 1) * spacing) /
+                      crossCount;
                   final itemHeight = width * 1.15;
 
                   return GridView.builder(
@@ -124,7 +154,8 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
                       return _RepeatedStickerCard(
                         stickerId: entry.key,
                         count: entry.value,
-                        onTap: () => _openCountSheet(context, entry.key, entry.value),
+                        onTap: () =>
+                            _openCountSheet(context, entry.key, entry.value),
                       );
                     },
                   );
@@ -146,14 +177,73 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
         onDone: () => Navigator.of(ctx).pop(),
         onSetCount: (newCount) async {
           ctx.read<AlbumBloc>().add(
-                AlbumUpdateStickerCountRequested(
-                  stickerId: stickerId,
-                  count: newCount,
-                ),
-              );
+            AlbumUpdateStickerCountRequested(
+              stickerId: stickerId,
+              count: newCount,
+            ),
+          );
         },
       ),
     );
+  }
+
+  Future<void> _shareRepeatedStickers(
+    BuildContext context,
+    List<MapEntry<String, int>> entries,
+    int totalDuplicates,
+  ) async {
+    if (_isSharingDuplicates) return;
+    setState(() => _isSharingDuplicates = true);
+
+    try {
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box == null
+          ? null
+          : box.localToGlobal(box.size.center(Offset.zero)) & const Size(1, 1);
+      final isEs = context.locale.languageCode.toLowerCase().startsWith('es');
+      final items = entries.map((entry) {
+        final duplicateCount = entry.value - 1;
+        return ShareStickerListItem.fromStickerId(
+          entry.key,
+          tone: ShareStickerTileTone.duplicate,
+          trailingText: '($duplicateCount)',
+          textSuffix: '($duplicateCount)',
+        );
+      }).toList();
+      await ShareStickerListImages.share(
+        context: context,
+        items: items,
+        total: totalDuplicates,
+        config: ShareStickerListConfig(
+          title: isEs ? 'Duplicadas' : 'Duplicates',
+          totalLabel: 'total',
+          stickerColumnLabel: isEs ? 'Lamina' : 'Sticker',
+          trailingColumnLabel: isEs ? 'Veces repetida' : 'Times repeated',
+          footer: isEs
+              ? 'Lista de intercambio generada desde Album Collect 2026'
+              : 'Trade list generated from Album Collect 2026',
+          message: isEs
+              ? 'Tengo $totalDuplicates duplicadas para intercambiar en Album Collect 2026.'
+              : 'I have $totalDuplicates duplicates to trade in Album Collect 2026.',
+          fileBaseName: 'album_collect_repetidas',
+          gridColumns: 4,
+          moreLabel: (count) => isEs
+              ? '+ $count laminas mas en tu lista'
+              : '+ $count more stickers in your list',
+        ),
+        subject: 'shareRepeatedSubject'.tr(),
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      debugPrint('[REPEATED_SHARE_DEBUG] failed error=$e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('shareRepeatedError'.tr())));
+      }
+    } finally {
+      if (mounted) setState(() => _isSharingDuplicates = false);
+    }
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -173,9 +263,9 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
             Text(
               'noRepeatedStickers'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -188,7 +278,9 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
     return entries.fold(0, (sum, e) => sum + (e.value - 1));
   }
 
-  static List<String> _countriesFromEntries(List<MapEntry<String, int>> entries) {
+  static List<String> _countriesFromEntries(
+    List<MapEntry<String, int>> entries,
+  ) {
     final set = <String>{};
     for (final e in entries) {
       set.add(_teamCodeFromStickerId(e.key));
@@ -260,7 +352,9 @@ class _CountryFilterTrigger extends StatelessWidget {
             decoration: BoxDecoration(
               color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
+              border: Border.all(
+                color: colors.outlineVariant.withValues(alpha: 0.6),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -281,9 +375,9 @@ class _CountryFilterTrigger extends StatelessWidget {
                   child: TeamCountryFilterBarContent(
                     selectedTeamCode: selected,
                     textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
                 Icon(
@@ -347,9 +441,9 @@ class _FilterSheet extends StatelessWidget {
               child: Text(
                 'filterByCountry'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Expanded(
@@ -405,7 +499,9 @@ class _FilterListTile extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                isSelected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
                 size: 22,
                 color: isSelected ? colors.primary : colors.onSurfaceVariant,
               ),
@@ -414,9 +510,11 @@ class _FilterListTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
+                    color: isSelected
+                        ? colors.onSurface
+                        : colors.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -433,7 +531,8 @@ String _stickerSubtitleFromId(String stickerId) {
     return WorldCup2026Seed.stickerNumberLabel(stickerId);
   }
   if (WorldCup2026Seed.isBadgeStickerId(stickerId)) return 'badge'.tr();
-  if (WorldCup2026Seed.getStickerById(stickerId)?.type == StickerType.team_photo) {
+  if (WorldCup2026Seed.getStickerById(stickerId)?.type ==
+      StickerType.team_photo) {
     return 'photo'.tr();
   }
   return 'sticker'.tr();
@@ -456,7 +555,9 @@ class _RepeatedStickerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final isBadge = WorldCup2026Seed.isBadgeStickerId(stickerId);
-    final flagPath = isBadge ? albumBadgeFlagAssetPathForStickerId(stickerId) : null;
+    final flagPath = isBadge
+        ? albumBadgeFlagAssetPathForStickerId(stickerId)
+        : null;
 
     return GestureDetector(
       onTap: onTap,
@@ -464,7 +565,9 @@ class _RepeatedStickerCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.primaryContainer,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
+          border: Border.all(
+            color: colors.outlineVariant.withValues(alpha: 0.6),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),
@@ -487,25 +590,39 @@ class _RepeatedStickerCard extends StatelessWidget {
                     Text(
                       WorldCup2026Seed.stickerCaptionTitle(stickerId),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.onSurface,
-                            fontSize: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 11 : 10,
-                            fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? null : 'monospace',
-                            fontWeight: WorldCup2026Seed.isPlayerStickerId(stickerId) ? FontWeight.w600 : null,
-                          ),
+                        color: colors.onSurface,
+                        fontSize: WorldCup2026Seed.isPlayerStickerId(stickerId)
+                            ? 11
+                            : 10,
+                        fontFamily:
+                            WorldCup2026Seed.isPlayerStickerId(stickerId)
+                            ? null
+                            : 'monospace',
+                        fontWeight:
+                            WorldCup2026Seed.isPlayerStickerId(stickerId)
+                            ? FontWeight.w600
+                            : null,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   SizedBox(height: isBadge ? 8 : 6),
                   if (isBadge && flagPath != null)
                     Expanded(
-                      child: _repeatedBadgeFlagWithCode(context, stickerId, flagPath, colors),
+                      child: _repeatedBadgeFlagWithCode(
+                        context,
+                        stickerId,
+                        flagPath,
+                        colors,
+                      ),
                     )
                   else if (isBadge)
                     Expanded(
                       child: Center(
                         child: Text(
                           'noShieldAvailable'.tr(),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: colors.onSurfaceVariant,
                                 fontSize: 10,
                               ),
@@ -518,11 +635,14 @@ class _RepeatedStickerCard extends StatelessWidget {
                     Text(
                       _stickerSubtitleFromId(stickerId),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 'monospace' : null,
-                          ),
+                        color: colors.onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        fontFamily:
+                            WorldCup2026Seed.isPlayerStickerId(stickerId)
+                            ? 'monospace'
+                            : null,
+                      ),
                     ),
                 ],
               ),
@@ -613,16 +733,18 @@ class _CountSheet extends StatelessWidget {
               Text(
                 WorldCup2026Seed.stickerCaptionTitle(stickerId),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colors.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Text(
                 _stickerSubtitleFromId(stickerId),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                      fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 'monospace' : null,
-                    ),
+                  color: colors.onSurfaceVariant,
+                  fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId)
+                      ? 'monospace'
+                      : null,
+                ),
               ),
               const SizedBox(height: 24),
               Row(
@@ -641,7 +763,8 @@ class _CountSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Text(
                       '$duplicateCount',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: colors.onSurface,
                           ),
@@ -652,7 +775,9 @@ class _CountSheet extends StatelessWidget {
                     onPressed: () async {
                       await onSetCount(count + 1);
                       if (context.mounted) {
-                        final sticker = WorldCup2026Seed.getStickerById(stickerId);
+                        final sticker = WorldCup2026Seed.getStickerById(
+                          stickerId,
+                        );
                         if (sticker != null) {
                           final team = sticker.teamId;
                           final line = switch (sticker.type) {
@@ -662,7 +787,8 @@ class _CountSheet extends StatelessWidget {
                               ((sticker.playerName ?? '').trim().isNotEmpty)
                                   ? '${sticker.playerName!.trim()} - $team'
                                   : 'Jugador - $team',
-                            StickerType.special => 'Especial - ${sticker.displayCode}',
+                            StickerType.special =>
+                              'Especial - ${sticker.displayCode}',
                           };
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -685,10 +811,7 @@ class _CountSheet extends StatelessWidget {
 }
 
 class _RepeatedBadgeHeader extends StatelessWidget {
-  const _RepeatedBadgeHeader({
-    required this.stickerId,
-    required this.colors,
-  });
+  const _RepeatedBadgeHeader({required this.stickerId, required this.colors});
 
   final String stickerId;
   final ColorScheme colors;
@@ -698,15 +821,17 @@ class _RepeatedBadgeHeader extends StatelessWidget {
     final s = WorldCup2026Seed.getStickerById(stickerId);
     final team = s != null ? WorldCup2026Seed.getTeamById(s.teamId) : null;
     final title = team != null
-        ? 'teamDetailTeamBadgeCountry'.tr(namedArgs: {'country': team.name.tr()})
+        ? 'teamDetailTeamBadgeCountry'.tr(
+            namedArgs: {'country': team.name.tr()},
+          )
         : 'teamDetailTeamBadge'.tr();
     return Text(
       title,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: colors.onSurface,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
+        color: colors.onSurface,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+      ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
@@ -724,17 +849,15 @@ Widget _repeatedBadgeFlagWithCode(
   return AlbumBadgeFlagWithCenteredCode(
     assetPath: flagPath,
     code: code,
-    codeStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
+    codeStyle:
+        Theme.of(context).textTheme.titleSmall?.copyWith(
           color: colors.onSurface,
           fontWeight: FontWeight.w500,
           fontFamily: 'monospace',
           fontSize: 12,
           letterSpacing: 0.4,
           shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 6,
-            ),
+            Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 6),
           ],
         ) ??
         TextStyle(
@@ -744,10 +867,7 @@ Widget _repeatedBadgeFlagWithCode(
           fontSize: 12,
           letterSpacing: 0.4,
           shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 6,
-            ),
+            Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 6),
           ],
         ),
   );

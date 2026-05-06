@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/features/home/presentation/widgets/album_badge_flag_display.dart';
+import 'package:albumtracker/features/home/presentation/widgets/share_sticker_list_images.dart';
 import 'package:albumtracker/features/home/presentation/widgets/team_country_filter_widgets.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
@@ -21,6 +22,7 @@ class MissingStickersView extends StatefulWidget {
 
 class _MissingStickersViewState extends State<MissingStickersView> {
   String? _selectedCountry;
+  bool _isSharingMissing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -47,18 +49,68 @@ class _MissingStickersViewState extends State<MissingStickersView> {
                   Text(
                     'homeFilterMissing'.tr(),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: colors.onSurface,
-                        ),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'homeFilterMissing'.tr(args: [missingIds.length.toString()]),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colors.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colors.outlineVariant.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.format_list_numbered_rounded,
+                          size: 18,
+                          color: colors.primary,
                         ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'homeFilterMissing'.tr(
+                              args: [missingIds.length.toString()],
+                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  color: colors.onPrimaryContainer,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'shareMissingTooltip'.tr(),
+                          onPressed: _isSharingMissing
+                              ? null
+                              : () =>
+                                    _shareMissingStickers(context, missingIds),
+                          icon: _isSharingMissing
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colors.onPrimaryContainer,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.ios_share_rounded,
+                                  color: colors.onPrimaryContainer,
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -75,7 +127,11 @@ class _MissingStickersViewState extends State<MissingStickersView> {
                   const crossCount = 3;
                   const padding = 16.0;
                   const spacing = 10.0;
-                  final width = (constraints.maxWidth - 2 * padding - (crossCount - 1) * spacing) / crossCount;
+                  final width =
+                      (constraints.maxWidth -
+                          2 * padding -
+                          (crossCount - 1) * spacing) /
+                      crossCount;
                   final itemHeight = width * 1.15;
                   return GridView.builder(
                     padding: const EdgeInsets.fromLTRB(padding, 0, padding, 88),
@@ -112,11 +168,8 @@ class _MissingStickersViewState extends State<MissingStickersView> {
         onAdded: () => Navigator.of(ctx).pop(),
         onMarkCollected: () async {
           ctx.read<AlbumBloc>().add(
-                AlbumUpdateStickerCountRequested(
-                  stickerId: stickerId,
-                  count: 1,
-                ),
-              );
+            AlbumUpdateStickerCountRequested(stickerId: stickerId, count: 1),
+          );
           if (context.mounted) {
             final sticker = WorldCup2026Seed.getStickerById(stickerId);
             if (sticker != null) {
@@ -131,6 +184,59 @@ class _MissingStickersViewState extends State<MissingStickersView> {
         },
       ),
     );
+  }
+
+  Future<void> _shareMissingStickers(
+    BuildContext context,
+    List<String> stickerIds,
+  ) async {
+    if (_isSharingMissing) return;
+    setState(() => _isSharingMissing = true);
+
+    try {
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box == null
+          ? null
+          : box.localToGlobal(box.size.center(Offset.zero)) & const Size(1, 1);
+      final isEs = context.locale.languageCode.toLowerCase().startsWith('es');
+      final total = stickerIds.length;
+      final items = stickerIds
+          .map((stickerId) => ShareStickerListItem.fromStickerId(stickerId))
+          .toList();
+      await ShareStickerListImages.share(
+        context: context,
+        items: items,
+        total: total,
+        config: ShareStickerListConfig(
+          title: isEs ? 'Faltantes' : 'Missing',
+          totalLabel: 'total',
+          stickerColumnLabel: isEs ? 'Lamina' : 'Sticker',
+          trailingColumnLabel: isEs ? 'Estado' : 'Status',
+          footer: isEs
+              ? 'Lista de faltantes generada desde Album Collect 2026'
+              : 'Missing list generated from Album Collect 2026',
+          message: isEs
+              ? 'Me faltan $total laminas en Album Collect 2026.'
+              : 'I am missing $total stickers in Album Collect 2026.',
+          fileBaseName: 'album_collect_faltantes',
+          gridColumns: 5,
+          moreLabel: (count) => isEs
+              ? '+ $count laminas mas en tu lista'
+              : '+ $count more stickers in your list',
+        ),
+        subject: 'shareMissingSubject'.tr(),
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      debugPrint('[MISSING_SHARE_DEBUG] failed error=$e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('shareMissingError'.tr())));
+      }
+    } finally {
+      if (mounted) setState(() => _isSharingMissing = false);
+    }
   }
 
   static String _addedLineForSticker(StickerModel sticker) {
@@ -166,17 +272,17 @@ class _MissingStickersViewState extends State<MissingStickersView> {
             Text(
               'fullAlbum'.tr(),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: colors.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: colors.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'noMissingSticker'.tr(),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
           ],
@@ -211,7 +317,9 @@ class _MissingStickersViewState extends State<MissingStickersView> {
 
   static List<String> _filterByCountry(List<String> ids, String? countryCode) {
     if (countryCode == null) return ids;
-    return ids.where((id) => _teamCodeFromStickerId(id) == countryCode).toList();
+    return ids
+        .where((id) => _teamCodeFromStickerId(id) == countryCode)
+        .toList();
   }
 
   static String _teamCodeFromStickerId(String stickerId) {
@@ -225,7 +333,8 @@ String _stickerSubtitleFromId(String stickerId) {
     return WorldCup2026Seed.stickerNumberLabel(stickerId);
   }
   if (WorldCup2026Seed.isBadgeStickerId(stickerId)) return 'badge'.tr();
-  if (WorldCup2026Seed.getStickerById(stickerId)?.type == StickerType.team_photo) {
+  if (WorldCup2026Seed.getStickerById(stickerId)?.type ==
+      StickerType.team_photo) {
     return 'photo'.tr();
   }
   return 'sticker'.tr();
@@ -272,7 +381,9 @@ class _MissingCountryFilterTrigger extends StatelessWidget {
             decoration: BoxDecoration(
               color: colors.primaryContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
+              border: Border.all(
+                color: colors.outlineVariant.withValues(alpha: 0.6),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -283,18 +394,26 @@ class _MissingCountryFilterTrigger extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.filter_list_rounded, size: 22, color: colors.onSurfaceVariant),
+                Icon(
+                  Icons.filter_list_rounded,
+                  size: 22,
+                  color: colors.onSurfaceVariant,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TeamCountryFilterBarContent(
                     selectedTeamCode: selected,
                     textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      color: colors.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                Icon(Icons.keyboard_arrow_down_rounded, size: 24, color: colors.onSurfaceVariant),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 24,
+                  color: colors.onSurfaceVariant,
+                ),
               ],
             ),
           ),
@@ -351,9 +470,9 @@ class _MissingFilterSheet extends StatelessWidget {
               child: Text(
                 'filterByCountry'.tr(),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Expanded(
@@ -409,7 +528,9 @@ class _MissingFilterListTile extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                isSelected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
                 size: 22,
                 color: isSelected ? colors.primary : colors.onSurfaceVariant,
               ),
@@ -418,9 +539,11 @@ class _MissingFilterListTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
+                    color: isSelected
+                        ? colors.onSurface
+                        : colors.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -432,10 +555,7 @@ class _MissingFilterListTile extends StatelessWidget {
 }
 
 class _MissingStickerCard extends StatelessWidget {
-  const _MissingStickerCard({
-    required this.stickerId,
-    required this.onTap,
-  });
+  const _MissingStickerCard({required this.stickerId, required this.onTap});
 
   final String stickerId;
   final VoidCallback onTap;
@@ -444,7 +564,9 @@ class _MissingStickerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final isBadge = WorldCup2026Seed.isBadgeStickerId(stickerId);
-    final flagPath = isBadge ? albumBadgeFlagAssetPathForStickerId(stickerId) : null;
+    final flagPath = isBadge
+        ? albumBadgeFlagAssetPathForStickerId(stickerId)
+        : null;
 
     return GestureDetector(
       onTap: onTap,
@@ -452,7 +574,9 @@ class _MissingStickerCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.primaryContainer,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
+          border: Border.all(
+            color: colors.outlineVariant.withValues(alpha: 0.6),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.15),
@@ -473,18 +597,29 @@ class _MissingStickerCard extends StatelessWidget {
                 Text(
                   WorldCup2026Seed.stickerCaptionTitle(stickerId),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurface,
-                        fontSize: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 11 : 10,
-                        fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? null : 'monospace',
-                        fontWeight: WorldCup2026Seed.isPlayerStickerId(stickerId) ? FontWeight.w600 : null,
-                      ),
+                    color: colors.onSurface,
+                    fontSize: WorldCup2026Seed.isPlayerStickerId(stickerId)
+                        ? 11
+                        : 10,
+                    fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId)
+                        ? null
+                        : 'monospace',
+                    fontWeight: WorldCup2026Seed.isPlayerStickerId(stickerId)
+                        ? FontWeight.w600
+                        : null,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               SizedBox(height: isBadge ? 8 : 6),
               if (isBadge && flagPath != null)
                 Expanded(
-                  child: _missingBadgeFlagWithCode(context, stickerId, flagPath, colors),
+                  child: _missingBadgeFlagWithCode(
+                    context,
+                    stickerId,
+                    flagPath,
+                    colors,
+                  ),
                 )
               else if (isBadge)
                 Expanded(
@@ -492,9 +627,9 @@ class _MissingStickerCard extends StatelessWidget {
                     child: Text(
                       'noShieldAvailable'.tr(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                            fontSize: 10,
-                          ),
+                        color: colors.onSurfaceVariant,
+                        fontSize: 10,
+                      ),
                       maxLines: 2,
                       textAlign: TextAlign.center,
                     ),
@@ -504,11 +639,13 @@ class _MissingStickerCard extends StatelessWidget {
                 Text(
                   _stickerSubtitleFromId(stickerId),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 'monospace' : null,
-                      ),
+                    color: colors.onSurfaceVariant,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId)
+                        ? 'monospace'
+                        : null,
+                  ),
                 ),
             ],
           ),
@@ -519,10 +656,7 @@ class _MissingStickerCard extends StatelessWidget {
 }
 
 class _MissingBadgeHeader extends StatelessWidget {
-  const _MissingBadgeHeader({
-    required this.stickerId,
-    required this.colors,
-  });
+  const _MissingBadgeHeader({required this.stickerId, required this.colors});
 
   final String stickerId;
   final ColorScheme colors;
@@ -532,15 +666,17 @@ class _MissingBadgeHeader extends StatelessWidget {
     final s = WorldCup2026Seed.getStickerById(stickerId);
     final team = s != null ? WorldCup2026Seed.getTeamById(s.teamId) : null;
     final title = team != null
-        ? 'teamDetailTeamBadgeCountry'.tr(namedArgs: {'country': team.name.tr()})
+        ? 'teamDetailTeamBadgeCountry'.tr(
+            namedArgs: {'country': team.name.tr()},
+          )
         : 'teamDetailTeamBadge'.tr();
     return Text(
       title,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: colors.onSurface,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
+        color: colors.onSurface,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+      ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
@@ -558,17 +694,15 @@ Widget _missingBadgeFlagWithCode(
   return AlbumBadgeFlagWithCenteredCode(
     assetPath: flagPath,
     code: code,
-    codeStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
+    codeStyle:
+        Theme.of(context).textTheme.titleSmall?.copyWith(
           color: colors.onSurface,
           fontWeight: FontWeight.w500,
           fontFamily: 'monospace',
           fontSize: 12,
           letterSpacing: 0.4,
           shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 6,
-            ),
+            Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 6),
           ],
         ) ??
         TextStyle(
@@ -578,10 +712,7 @@ Widget _missingBadgeFlagWithCode(
           fontSize: 12,
           letterSpacing: 0.4,
           shadows: [
-            Shadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 6,
-            ),
+            Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 6),
           ],
         ),
   );
@@ -632,16 +763,18 @@ class _AddOneSheet extends StatelessWidget {
           Text(
             WorldCup2026Seed.stickerCaptionTitle(stickerId),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colors.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: colors.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           Text(
             _stickerSubtitleFromId(stickerId),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId) ? 'monospace' : null,
-                ),
+              color: colors.onSurfaceVariant,
+              fontFamily: WorldCup2026Seed.isPlayerStickerId(stickerId)
+                  ? 'monospace'
+                  : null,
+            ),
           ),
           const SizedBox(height: 24),
           SizedBox(

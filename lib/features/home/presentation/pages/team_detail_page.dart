@@ -15,6 +15,7 @@ import 'package:albumtracker/features/home/presentation/bloc/album_event.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_state.dart';
 import 'package:albumtracker/features/home/presentation/models/team_sticker_item.dart';
 import 'package:albumtracker/features/home/presentation/widgets/flag_placeholder.dart';
+import 'package:albumtracker/features/home/presentation/widgets/share_sticker_list_images.dart';
 import '../widgets/sticker_count_sheet.dart';
 import 'package:albumtracker/features/home/presentation/widgets/team_completion_card.dart';
 import 'package:albumtracker/features/home/presentation/widgets/team_sticker_card.dart';
@@ -45,10 +46,7 @@ class TeamDetailPage extends StatelessWidget {
 }
 
 class _TeamDetailBody extends StatefulWidget {
-  const _TeamDetailBody({
-    required this.team,
-    required this.groupName,
-  });
+  const _TeamDetailBody({required this.team, required this.groupName});
 
   final TeamModel team;
   final String groupName;
@@ -59,6 +57,7 @@ class _TeamDetailBody extends StatefulWidget {
 
 class _TeamDetailBodyState extends State<_TeamDetailBody> {
   TeamStickerFilter _filter = TeamStickerFilter.all;
+  bool _isSharingTeam = false;
 
   int _countFor(StickerModel s) => AlbumRepository.getStickerCount(s.id);
 
@@ -103,15 +102,13 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
         onDone: (newCount) async {
           if (ctx.mounted) {
             ctx.read<AlbumBloc>().add(
-                  AlbumUpdateStickerCountRequested(
-                    stickerId: sticker.id,
-                    count: newCount,
-                  ),
-                );
+              AlbumUpdateStickerCountRequested(
+                stickerId: sticker.id,
+                count: newCount,
+              ),
+            );
             if (newCount > count) {
-              _showAddedList([
-                _addedLineForSticker(sticker),
-              ]);
+              _showAddedList([_addedLineForSticker(sticker)]);
             }
           }
         },
@@ -171,92 +168,118 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
         valueListenable: collectionBox.listenable(),
         builder: (context, __, ___) {
           return Scaffold(
-          backgroundColor: colors.surface,
-          appBar: AppBar(
             backgroundColor: colors.surface,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios, color: colors.onSurface, size: 20),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            title: Text(
-              'teamDetailBackGroups'.tr(),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            centerTitle: false,
-            actions: [
-              IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.share_outlined, color: colors.onSurface, size: 22),
+            appBar: AppBar(
+              backgroundColor: colors.surface,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios,
+                  color: colors.onSurface,
+                  size: 20,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
               ),
-            ],
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _TeamHeader(
-                  teamName: team.name.tr(),
-                  groupName: widget.groupName,
-                  flagAssetPath: team.flagAssetPath ?? '',
-                ),
-                const SizedBox(height: 16),
-                TeamCompletionCard(
-                  total: total,
-                  found: found,
-                  missing: missing,
-                ),
-                TeamStickerFilterTabs(
-                  selected: _filter,
-                  duplicateCount: duplicateCount,
-                  onChanged: (v) => setState(() => _filter = v),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'teamDetailSquadMembers'.tr(),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
+              title: Text(
+                'teamDetailBackGroups'.tr(),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              centerTitle: false,
+              actions: [
+                IconButton(
+                  onPressed: _isSharingTeam
+                      ? null
+                      : () =>
+                            _shareTeamStickers(context, stickers, found, total),
+                  icon: _isSharingTeam
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.onSurface,
+                          ),
+                        )
+                      : Icon(
+                          Icons.share_outlined,
+                          color: colors.onSurface,
+                          size: 22,
                         ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final colors = Theme.of(context).colorScheme;
-                      const crossCount = 3;
-                      final spacing = 10.0;
-                      final size = (constraints.maxWidth - (crossCount - 1) * spacing) / crossCount;
-                      return Wrap(
-                        spacing: spacing,
-                        runSpacing: spacing,
-                        children: filtered
-                            .map(
-                              (s) => SizedBox(
-                                width: size,
-                                height: size * 1.15,
-                                child: TeamStickerCard(
-                                  sticker: _toStickerItems().firstWhere((i) => i.code == s.code),
-                                  count: _countFor(s),
-                                  teamFlagAssetPath: widget.team.flagAssetPath,
-                                  onTap: () => _openStickerSheet(s),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),
-          ),
-        );
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _TeamHeader(
+                    teamName: team.name.tr(),
+                    groupName: widget.groupName,
+                    flagAssetPath: team.flagAssetPath ?? '',
+                  ),
+                  const SizedBox(height: 16),
+                  TeamCompletionCard(
+                    total: total,
+                    found: found,
+                    missing: missing,
+                  ),
+                  TeamStickerFilterTabs(
+                    selected: _filter,
+                    duplicateCount: duplicateCount,
+                    onChanged: (v) => setState(() => _filter = v),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'teamDetailSquadMembers'.tr(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final colors = Theme.of(context).colorScheme;
+                        const crossCount = 3;
+                        final spacing = 10.0;
+                        final size =
+                            (constraints.maxWidth -
+                                (crossCount - 1) * spacing) /
+                            crossCount;
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: spacing,
+                          children: filtered
+                              .map(
+                                (s) => SizedBox(
+                                  width: size,
+                                  height: size * 1.15,
+                                  child: TeamStickerCard(
+                                    sticker: _toStickerItems().firstWhere(
+                                      (i) => i.code == s.code,
+                                    ),
+                                    count: _countFor(s),
+                                    teamFlagAssetPath:
+                                        widget.team.flagAssetPath,
+                                    onTap: () => _openStickerSheet(s),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         },
       ),
     );
@@ -270,6 +293,79 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
         return stickers.where((s) => _countFor(s) == 0).toList();
       case TeamStickerFilter.duplicates:
         return stickers.where((s) => _countFor(s) > 1).toList();
+    }
+  }
+
+  Future<void> _shareTeamStickers(
+    BuildContext context,
+    List<StickerModel> stickers,
+    int found,
+    int total,
+  ) async {
+    if (_isSharingTeam) return;
+    setState(() => _isSharingTeam = true);
+
+    try {
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box == null
+          ? null
+          : box.localToGlobal(box.size.center(Offset.zero)) & const Size(1, 1);
+      final isEs = context.locale.languageCode.toLowerCase().startsWith('es');
+      final teamName = widget.team.name.tr();
+      final items = stickers.map((sticker) {
+        final count = _countFor(sticker);
+        final hasSticker = count > 0;
+        final repeated = count > 1 ? count - 1 : 0;
+        final status = hasSticker
+            ? (repeated > 0
+                  ? (isEs ? 'Tiene ($repeated)' : 'Owned ($repeated)')
+                  : (isEs ? 'Tiene' : 'Owned'))
+            : (isEs ? 'Falta' : 'Missing');
+        return ShareStickerListItem.fromStickerId(
+          sticker.id,
+          tone: hasSticker
+              ? (repeated > 0
+                    ? ShareStickerTileTone.duplicate
+                    : ShareStickerTileTone.owned)
+              : ShareStickerTileTone.missing,
+          trailingText: status,
+          textSuffix: status,
+        );
+      }).toList();
+
+      await ShareStickerListImages.share(
+        context: context,
+        items: items,
+        total: found,
+        config: ShareStickerListConfig(
+          title: teamName,
+          totalLabel: isEs ? 'de $total' : 'of $total',
+          stickerColumnLabel: isEs ? 'Lamina' : 'Sticker',
+          trailingColumnLabel: isEs ? 'Estado' : 'Status',
+          footer: isEs
+              ? 'Resumen de pais generado desde Album Collect 2026'
+              : 'Country summary generated from Album Collect 2026',
+          message: isEs
+              ? '$teamName: tengo $found de $total laminas en Album Collect 2026.'
+              : '$teamName: I have $found of $total stickers in Album Collect 2026.',
+          fileBaseName: 'album_collect_${widget.team.id.toLowerCase()}',
+          gridColumns: 4,
+          moreLabel: (count) => isEs
+              ? '+ $count laminas mas de $teamName'
+              : '+ $count more stickers from $teamName',
+        ),
+        subject: '$teamName - Album Collect 2026',
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      debugPrint('[TEAM_SHARE_DEBUG] failed error=$e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('No se pudo compartir')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSharingTeam = false);
     }
   }
 }
@@ -315,9 +411,9 @@ class _TeamHeader extends StatelessWidget {
                 Text(
                   teamName,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
