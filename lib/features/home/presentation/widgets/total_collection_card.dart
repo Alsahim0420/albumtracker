@@ -1,7 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-
 /// Card de progreso total: "TOTAL COLLECTION", barra verde y contador.
 class TotalCollectionCard extends StatelessWidget {
   const TotalCollectionCard({
@@ -16,6 +15,10 @@ class TotalCollectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percent = total > 0 ? (collected / total).clamp(0.0, 1.0) : 0.0;
+    final pctOutOf100 = percent * 100;
+    final percentDisplay = (pctOutOf100 > 0 && pctOutOf100 < 1) || pctOutOf100 > 99
+        ? pctOutOf100.toStringAsFixed(1)
+        : pctOutOf100.round().toString();
     final colors = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Track: surco más oscuro que el fondo del card para que se vea también en 0 %.
@@ -41,9 +44,9 @@ class TotalCollectionCard extends StatelessWidget {
           Text(
             'homeTotalCollection'.tr(),
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: colors.onSurface,
-                  letterSpacing: 0.5,
-                ),
+              color: colors.onSurface,
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: 10),
           ClipRRect(
@@ -59,7 +62,13 @@ class TotalCollectionCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SizedBox.shrink(),
+              Text(
+                'homeTotalCollectionPercent'.tr(args: [percentDisplay]),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
@@ -67,16 +76,16 @@ class TotalCollectionCard extends StatelessWidget {
                   Text(
                     '$collected',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: colors.onSurface,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: colors.onSurface,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Text(
                     '/$total',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colors.onSurfaceVariant.withValues(alpha: 0.8),
-                        ),
+                      color: colors.onSurfaceVariant.withValues(alpha: 0.8),
+                    ),
                   ),
                 ],
               ),

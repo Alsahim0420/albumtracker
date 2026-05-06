@@ -12,7 +12,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:albumtracker/core/error/failures.dart';
 import 'package:albumtracker/core/injection.dart';
-import 'package:albumtracker/core/repository/album_repository.dart' as album_seed_stats;
+import 'package:albumtracker/core/repository/album_repository.dart'
+    as album_seed_stats;
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/domain/repositories/album_repository.dart';
 import 'package:albumtracker/features/home/domain/services/collection_human_csv_codec.dart';
@@ -42,9 +43,9 @@ void _showLanguagePicker(BuildContext context) {
               Text(
                 'settingsLanguage'.tr(),
                 style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: ctxColors.onSurface,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: ctxColors.onSurface,
+                ),
               ),
               const SizedBox(height: 16),
               _LanguageOption(
@@ -100,8 +101,8 @@ class SettingsPage extends StatelessWidget {
           final themeMode = mode == 'light'
               ? ThemeMode.light
               : mode == 'dark'
-                  ? ThemeMode.dark
-                  : ThemeMode.system;
+              ? ThemeMode.dark
+              : ThemeMode.system;
           onThemeModeChanged?.call(themeMode);
           if (ctx.mounted) Navigator.of(ctx).pop();
         },
@@ -124,25 +125,30 @@ class SettingsPage extends StatelessWidget {
   static const _urlChannel = MethodChannel('com.app.albumcollect/url_launcher');
 
   Future<void> _exportCsv(BuildContext context) async {
+    final box = context.findRenderObject() as RenderBox?;
+    final sharePositionOrigin = box == null
+        ? null
+        : box.localToGlobal(box.size.center(Offset.zero)) & const Size(1, 1);
     final export = sl<ExportCollectionCsvUseCase>();
     final result = await export(
-      ExportCollectionCsvParams(languageCode: context.locale.languageCode),
+      ExportCollectionCsvParams(
+        languageCode: context.locale.languageCode,
+        sharePositionOrigin: sharePositionOrigin,
+      ),
     );
     if (!context.mounted) return;
     result.fold(
       (failure) => ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_csvFailureMessage(failure, forImport: false))),
       ),
-      (_) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('settingsExportSuccess'.tr())),
-      ),
+      (_) => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('settingsExportSuccess'.tr()))),
     );
   }
 
   Future<void> _importCsv(BuildContext context) async {
-    debugPrint(
-      '[CSV_IMPORT_DEBUG] platform=${Theme.of(context).platform}',
-    );
+    debugPrint('[CSV_IMPORT_DEBUG] platform=${Theme.of(context).platform}');
     final pick = await FilePicker.platform.pickFiles(
       type: FileType.any,
       withData: true,
@@ -156,7 +162,9 @@ class SettingsPage extends StatelessWidget {
 
     var bytes = file.bytes;
     final bytesInMemory = bytes != null;
-    debugPrint('[CSV_IMPORT_DEBUG] bytes.inMemory=${bytesInMemory ? 'not_null' : 'null'}');
+    debugPrint(
+      '[CSV_IMPORT_DEBUG] bytes.inMemory=${bytesInMemory ? 'not_null' : 'null'}',
+    );
     if (bytes == null && file.path != null && file.path!.isNotEmpty) {
       try {
         bytes = await File(file.path!).readAsBytes();
@@ -168,11 +176,12 @@ class SettingsPage extends StatelessWidget {
       debugPrint('[CSV_IMPORT_DEBUG] bytes.origin=memory');
     }
     debugPrint('[CSV_IMPORT_DEBUG] bytes.length=${bytes?.length ?? 0}');
+    if (!context.mounted) return;
 
     if (bytes == null || bytes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('settingsImportReadError'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('settingsImportReadError'.tr())));
       return;
     }
 
@@ -190,9 +199,9 @@ class SettingsPage extends StatelessWidget {
 
     if (csvText.trim().isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('settingsImportFileEmpty'.tr())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('settingsImportFileEmpty'.tr())));
       }
       return;
     }
@@ -273,6 +282,11 @@ class SettingsPage extends StatelessWidget {
   }
 
   String _csvFailureMessage(Failure failure, {required bool forImport}) {
+    if (!forImport && failure is CsvExportFailure) {
+      return failure.message != null && failure.message!.isNotEmpty
+          ? '${'settingsExportError'.tr()}: ${failure.message}'
+          : 'settingsExportError'.tr();
+    }
     if (failure is CsvImportFailure) {
       return failure.message != null && failure.message!.isNotEmpty
           ? '${'settingsImportError'.tr()}: ${failure.message}'
@@ -284,7 +298,9 @@ class SettingsPage extends StatelessWidget {
   Future<void> _openUrl(BuildContext context, String urlString) async {
     try {
       try {
-        final ok = await _urlChannel.invokeMethod<bool>('openUrl', {'url': urlString});
+        final ok = await _urlChannel.invokeMethod<bool>('openUrl', {
+          'url': urlString,
+        });
         if (ok == true) {
           return;
         }
@@ -295,9 +311,9 @@ class SettingsPage extends StatelessWidget {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo abrir el enlace')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('No se pudo abrir el enlace')));
       }
     }
   }
@@ -329,7 +345,9 @@ class SettingsPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                 child: Text(
                   'settingsTitle'.tr(),
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 28),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineMedium?.copyWith(fontSize: 28),
                 ),
               ),
               SettingsProfileCard(
@@ -343,7 +361,9 @@ class SettingsPage extends StatelessWidget {
                 icon: Icons.language_rounded,
                 title: 'settingsLanguage',
                 trailing: Text(
-                  context.locale.languageCode == 'es' ? 'languageSpanish'.tr() : 'languageEnglish'.tr(),
+                  context.locale.languageCode == 'es'
+                      ? 'languageSpanish'.tr()
+                      : 'languageEnglish'.tr(),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 onTap: () => _showLanguagePicker(context),
@@ -361,7 +381,10 @@ class SettingsPage extends StatelessWidget {
               SettingsTile(
                 icon: Icons.shield_outlined,
                 title: 'settingsPrivacySecurity',
-                onTap: () => _openUrl(context, 'https://albumcollect2026.netlify.app/privacidad'),
+                onTap: () => _openUrl(
+                  context,
+                  'https://albumcollect2026.netlify.app/privacidad',
+                ),
               ),
               SettingsSectionHeader(title: 'settingsCollectionData'),
               SettingsTile(
@@ -378,7 +401,8 @@ class SettingsPage extends StatelessWidget {
               SettingsTile(
                 icon: Icons.info_outline_rounded,
                 title: 'settingsAppInformation',
-                onTap: () => _openUrl(context, 'https://albumcollect2026.netlify.app/'),
+                onTap: () =>
+                    _openUrl(context, 'https://albumcollect2026.netlify.app/'),
               ),
               SettingsTile(
                 icon: Icons.help_outline_rounded,
@@ -403,7 +427,8 @@ class _AppearanceSheetContent extends StatefulWidget {
   final void Function(String mode) onApply;
 
   @override
-  State<_AppearanceSheetContent> createState() => _AppearanceSheetContentState();
+  State<_AppearanceSheetContent> createState() =>
+      _AppearanceSheetContentState();
 }
 
 class _AppearanceSheetContentState extends State<_AppearanceSheetContent> {
@@ -445,16 +470,16 @@ class _AppearanceSheetContentState extends State<_AppearanceSheetContent> {
                       Text(
                         'appearanceTitle'.tr(),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colors.onSurface,
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: colors.onSurface,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'appearanceSubtitle'.tr(),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
+                          color: colors.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -560,7 +585,9 @@ class _AppearanceOption extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final selected = value == groupValue;
     return Material(
-      color: selected ? colors.surfaceContainerHigh : colors.surfaceContainerHighest,
+      color: selected
+          ? colors.surfaceContainerHigh
+          : colors.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -586,16 +613,16 @@ class _AppearanceOption extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: colors.onSurface,
-                          ),
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurface,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -641,9 +668,9 @@ class _LanguageOption extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurface,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: colors.onSurface),
                 ),
               ),
               if (isSelected)

@@ -58,6 +58,7 @@
     "title": "Football Album 2026",
     "homeAlbumCollection": "ALBUM COLLECTION",
     "homeTotalCollection": "TOTAL COLLECTION",
+    "homeTotalCollectionPercent": "{}%",
     "homeCompleted": "Completed",
     "homeSwapsAvailable": "Swaps available",
     "homeFilterSwaps": "Swaps",
