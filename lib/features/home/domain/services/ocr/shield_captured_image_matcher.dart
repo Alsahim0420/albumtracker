@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:image/image.dart' as im;
 
@@ -32,9 +31,6 @@ class ShieldCapturedImageMatcher {
   Future<ShieldMatchResult?> findBestMatch(String filePath) async {
     final best = await findBestCandidate(filePath);
     if (best == null) return null;
-    if (kDebugMode) {
-      debugPrint('[ShieldMatch] best=${best.similarity} for ${best.teamFifaCode} (threshold $_simThreshold)');
-    }
     if (best.similarity < _simThreshold || best.teamFifaCode.isEmpty) {
       return null;
     }

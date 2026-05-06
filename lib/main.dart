@@ -1,7 +1,6 @@
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/theme/team_theme.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -18,11 +17,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await dotenv.load(fileName: 'assets/.env');
-  } catch (e, st) {
-    if (kDebugMode) {
-      debugPrint('[main] No se pudo cargar assets/.env (OpenAI opcional): $e\n$st');
-    }
-  }
+  } catch (_) {}
   await initHive();
   await init();
   await EasyLocalization.ensureInitialized();
@@ -117,8 +112,37 @@ class _AppEntry extends StatefulWidget {
   State<_AppEntry> createState() => _AppEntryState();
 }
 
-class _AppEntryState extends State<_AppEntry> {
+class _AppEntryState extends State<_AppEntry> with WidgetsBindingObserver {
   bool _splashDone = false;
+
+  /// No usar `inactive` aquí: evita tratar diálogos/sombreados como “salida de la app”.
+  AppLifecycleState? _lastLifecycleStateExcludingInactive;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final resumedFromBackground =
+        state == AppLifecycleState.resumed &&
+            _lastLifecycleStateExcludingInactive ==
+                AppLifecycleState.paused;
+    if (resumedFromBackground && mounted) {
+      setState(() => _splashDone = false);
+    }
+    if (state != AppLifecycleState.inactive) {
+      _lastLifecycleStateExcludingInactive = state;
+    }
+  }
 
   void _onSplashComplete() {
     setState(() => _splashDone = true);

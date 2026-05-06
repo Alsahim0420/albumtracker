@@ -32,6 +32,7 @@ import 'package:albumtracker/features/home/presentation/widgets/sticker_count_sh
 import 'package:albumtracker/features/home/presentation/widgets/team_sticker_card.dart';
 import 'package:albumtracker/features/home/presentation/widgets/total_collection_card.dart';
 import 'package:albumtracker/features/home/presentation/pages/team_detail_page.dart';
+import 'package:albumtracker/features/home/presentation/search/sticker_search_delegate.dart';
 
 /// Pantalla principal: World Cup 2026, tabs, total collection y grupos con equipos.
 class HomePage extends StatefulWidget {
@@ -136,7 +137,17 @@ class _HomePageState extends State<HomePage> {
         final groups = AlbumRepository.getGroupsWithProgress();
         return Column(
           children: [
-            HomeHeaderV2(onSearch: () {}),
+            HomeHeaderV2(
+              onSearch: () {
+                showSearch<void>(
+                  context: context,
+                  delegate: StickerSearchDelegate(
+                    parentContext: context,
+                    searchHint: 'stickerSearchHint'.tr(),
+                  ),
+                );
+              },
+            ),
             TotalCollectionCard(
               collected: stats.collectedStickers,
               total: stats.totalStickers,

@@ -189,10 +189,6 @@ class _TeamDetailBodyState extends State<_TeamDetailBody> {
                 onPressed: () {},
                 icon: Icon(Icons.share_outlined, color: colors.onSurface, size: 22),
               ),
-              IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.more_vert, color: colors.onSurface, size: 22),
-              ),
             ],
           ),
           body: SingleChildScrollView(

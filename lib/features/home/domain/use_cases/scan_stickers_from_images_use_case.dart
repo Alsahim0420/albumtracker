@@ -2,8 +2,6 @@ import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/error/failures.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/usecase/usecase.dart';
-import 'package:albumtracker/features/home/domain/entities/ocr_sticker_detection.dart';
-import 'package:albumtracker/features/home/domain/entities/sticker_scan_image_side.dart';
 import 'package:albumtracker/features/home/domain/entities/sticker_scan_result.dart';
 import 'package:albumtracker/features/home/domain/repositories/album_repository.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_scan_coordinator.dart';
@@ -50,47 +48,12 @@ class ScanStickersFromImagesUseCase
         final stickers = pipeline.matchedStickers;
         final ocr = pipeline.ocrDetection;
 
-        if (ocr.type == OcrLogicalStickerType.special) {
-          needsReview += 1;
-          final specialMsg = pipeline.side == StickerScanImageSide.front
-              ? 'scanResultSpecialFrontReview'
-              : 'scanResultSpecialReview';
-          items.add(
-            SingleStickerScanResult(
-              imagePath: imagePath,
-              rawText: pipeline.rawText,
-              normalizedText: pipeline.normalizedText,
-              detectedIdentifier: null,
-              matchedSticker: null,
-              status: StickerScanStatus.needsManualReview,
-              message: specialMsg,
-              imageSide: pipeline.side,
-              ocrDetection: ocr,
-            ),
-          );
-          continue;
-        }
-
         if (stickers.isEmpty) {
-          notFound += 1;
-          var msg = _emptyMessageForSide(pipeline.side);
-          if (ocr.countryCode != null && ocr.stickerNumber == null) {
-            msg = 'scanResultWeAreNoNumber';
-          }
-          items.add(
-            SingleStickerScanResult(
-              imagePath: imagePath,
-              rawText: pipeline.rawText,
-              normalizedText: pipeline.normalizedText,
-              detectedIdentifier: pipeline.detectedHint,
-              matchedSticker: null,
-              status: StickerScanStatus.notFound,
-              message: msg,
-              imageSide: pipeline.side,
-              ocrDetection: ocr,
+          return Left(
+            RemoteAnalysisFailure(
+              'No se detectaron láminas válidas para la imagen',
             ),
           );
-          continue;
         }
 
         // Modo permisivo: si el pipeline resolvió láminas válidas, se agregan
@@ -176,20 +139,7 @@ class ScanStickersFromImagesUseCase
         final refreshed = await _repository.getCollection();
         refreshed.fold((_) {}, (m) => collection = Map<String, int>.from(m));
       } catch (_) {
-        failed += 1;
-        items.add(
-          SingleStickerScanResult(
-            imagePath: imagePath,
-            rawText: '',
-            normalizedText: '',
-            detectedIdentifier: null,
-            matchedSticker: null,
-            status: StickerScanStatus.ocrFailed,
-            message: 'OCR failed',
-            imageSide: null,
-            ocrDetection: null,
-          ),
-        );
+        return Left(RemoteAnalysisFailure('Error al analizar imagen con backend'));
       }
     }
 
@@ -207,16 +157,6 @@ class ScanStickersFromImagesUseCase
     );
   }
 
-  String _emptyMessageForSide(StickerScanImageSide side) {
-    switch (side) {
-      case StickerScanImageSide.unknown:
-        return 'scanResultSideUnknown';
-      case StickerScanImageSide.front:
-        return 'scanResultFrontNoMatch';
-      case StickerScanImageSide.back:
-        return 'scanResultBackNoMatch';
-    }
-  }
 }
 
 class ScanStickersFromImagesParams {

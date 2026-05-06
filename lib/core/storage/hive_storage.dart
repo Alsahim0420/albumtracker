@@ -151,3 +151,37 @@ Future<void> addStickersByStickerIds(Iterable<String> stickerIds) async {
   }
   await saveCollectedStickersMap(map);
 }
+
+/// Aplica varios conteos en una sola escritura (importación CSV).
+Future<void> applyStickerCounts(Map<String, int> counts) async {
+  final map = Map<String, int>.from(collectedStickersMap);
+  for (final e in counts.entries) {
+    if (e.value <= 0) {
+      map.remove(e.key);
+    } else {
+      map[e.key] = e.value;
+    }
+  }
+  await saveCollectedStickersMap(map);
+}
+
+/// Import CSV modo sumar: cantidad final = actual + CSV (filas con cantidad ≤ 0 se ignoran).
+Future<void> mergeStickerCounts(Map<String, int> counts) async {
+  final map = Map<String, int>.from(collectedStickersMap);
+  for (final e in counts.entries) {
+    if (e.value <= 0) continue;
+    map[e.key] = (map[e.key] ?? 0) + e.value;
+  }
+  await saveCollectedStickersMap(map);
+}
+
+/// Import CSV modo reemplazar: la colección queda solo con los datos del CSV (solo cantidades > 0).
+Future<void> replaceStickerCounts(Map<String, int> counts) async {
+  final map = <String, int>{};
+  for (final e in counts.entries) {
+    if (e.value > 0) {
+      map[e.key] = e.value;
+    }
+  }
+  await saveCollectedStickersMap(map);
+}

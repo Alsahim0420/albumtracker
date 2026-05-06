@@ -14,7 +14,6 @@ import 'package:albumtracker/features/home/domain/services/ocr/we_are_front_coun
 import 'package:albumtracker/features/home/domain/services/sticker_image_side_detector.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_matcher_service.dart';
 import 'package:albumtracker/features/home/domain/services/sticker_text_parser.dart';
-import 'package:flutter/foundation.dart';
 
 /// No auto-añadir por debajo de este umbral.
 const double kOcrMinConfidenceToAutoAdd = 0.85;
@@ -86,7 +85,6 @@ class StickerOcrResolver {
     final frontPlayerCount =
         frontCollage.where((s) => s.type == StickerType.player).length;
     final forcedFrontMode = frontPlayerCount >= 2;
-    var backRejectedDueToFront = false;
 
     var multiBack = _resolveAllFifa2026BackStickers(normalized);
     if (multiBack.isNotEmpty) {
@@ -95,7 +93,6 @@ class StickerOcrResolver {
 
     if (forcedFrontMode && multiBack.isNotEmpty) {
       multiBack = <StickerModel>[];
-      backRejectedDueToFront = true;
     } else if (!forcedFrontMode &&
         multiBack.isNotEmpty &&
         frontCollage.isNotEmpty) {
@@ -104,17 +101,9 @@ class StickerOcrResolver {
         final filtered =
             multiBack.where((b) => b.teamId.toUpperCase() == dominant).toList();
         if (filtered.length != multiBack.length) {
-          backRejectedDueToFront = true;
           multiBack = filtered;
         }
       }
-    }
-
-    if (kDebugMode) {
-      debugPrint(
-        '[OcrResolver] forcedFrontMode=$forcedFrontMode '
-        'backRejectedDueToFront=$backRejectedDueToFront',
-      );
     }
 
     final fifaPath = _resolveFifa2026BackPath(normalized);
@@ -741,12 +730,6 @@ class StickerOcrResolver {
     final uniquePairs = pairCounts.length;
     if (uniquePairs == 0) {
       final fallback = math.min(30, math.max(1, rawBackMatchesCount));
-      if (kDebugMode) {
-        debugPrint(
-          '[BackMatcherCap] pairHistogram={} uniquePairs=0 perTypeCap=n/a '
-          'estimatedPhysicalCap=n/a finalBackStickerCap=$fallback (sin pares anclados)',
-        );
-      }
       return fallback.clamp(1, 60);
     }
     final perTypeCap = uniquePairs >= 6 ? 2 : 3;
@@ -760,17 +743,6 @@ class StickerOcrResolver {
     );
     if (cap < uniquePairs) {
       cap = uniquePairs;
-    }
-    if (kDebugMode) {
-      final sorted = pairCounts.entries.toList()
-        ..sort((a, b) => a.key.compareTo(b.key));
-      final pairHistogram = sorted.map((e) => '${e.key}:${e.value}').join(', ');
-      debugPrint('[BackMatcherCap] pairHistogram={$pairHistogram}');
-      debugPrint('[BackMatcherCap] uniquePairs=$uniquePairs perTypeCap=$perTypeCap');
-      debugPrint(
-        '[BackMatcherCap] estimatedPhysicalCap=$estimatedPhysicalCount '
-        'finalBackStickerCap=$cap',
-      );
     }
     return cap.clamp(1, 60);
   }
@@ -786,15 +758,6 @@ class StickerOcrResolver {
     final shouldCompress =
         rawCount > 30 || rawCount > cap * 2 || rawCount > cap;
     if (!shouldCompress) {
-      if (kDebugMode) {
-        debugPrint('[BackMatcher] rawBackMatchesCount=$rawCount');
-        debugPrint('[BackMatcher] compressedBackMatchesCount=$rawCount');
-        debugPrint('[BackMatcher] compressionApplied=false backStickerCap=$cap');
-        debugPrint(
-          '[BackMatcherDebug] meaningfulLineCount=${_meaningfulOcrLineCount(rawOcrText)} '
-          'backStickerCap=$cap',
-        );
-      }
       return raw;
     }
     var maxOut = cap;
@@ -803,21 +766,6 @@ class StickerOcrResolver {
     }
     maxOut = math.min(maxOut, rawCount).clamp(1, rawCount);
     final out = raw.sublist(0, maxOut);
-    if (kDebugMode) {
-      debugPrint('[BackMatcher] rawBackMatchesCount=$rawCount');
-      debugPrint('[BackMatcher] compressedBackMatchesCount=${out.length}');
-      debugPrint('[BackMatcher] compressionApplied=true backStickerCap=$cap');
-      final anchored = Fifa2026BackOcrParser.extractFifaStyleCodesAnchoredNearCup2026(
-        normalizedUpper,
-      );
-      final uniqueN = anchored.map((p) => '${p.code}|${p.number}').toSet().length;
-      debugPrint(
-        '[BackMatcherDebug] meaningfulLineCount=${_meaningfulOcrLineCount(rawOcrText)} '
-        'uniqueAnchoredPairs=$uniqueN backStickerCap=$cap '
-        'compressedBackMatchesCount=${out.length} '
-        'finalBackMatchesIds=${out.map((e) => e.id).join(",")}',
-      );
-    }
     return out;
   }
 

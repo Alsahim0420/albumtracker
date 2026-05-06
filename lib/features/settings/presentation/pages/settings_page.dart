@@ -1,14 +1,22 @@
 // ignore_for_file: deprecated_member_use, unused_local_variable, unnecessary_underscores, unused_import
 
+import 'dart:convert';
+
 import 'package:easy_localization/easy_localization.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:albumtracker/core/repository/album_repository.dart';
+import 'package:albumtracker/core/error/failures.dart';
+import 'package:albumtracker/core/injection.dart';
+import 'package:albumtracker/core/repository/album_repository.dart' as album_seed_stats;
 import 'package:albumtracker/core/storage/hive_storage.dart';
-import 'package:albumtracker/core/theme/app_colors.dart';
+import 'package:albumtracker/features/home/domain/repositories/album_repository.dart';
+import 'package:albumtracker/features/home/domain/services/collection_human_csv_codec.dart';
+import 'package:albumtracker/features/home/domain/use_cases/export_collection_csv_use_case.dart';
+import 'package:albumtracker/features/home/domain/use_cases/import_collection_csv_use_case.dart';
 import 'package:albumtracker/features/personalization/presentation/pages/personalization_page.dart';
 import 'package:albumtracker/features/settings/presentation/widgets/settings_profile_card.dart';
 import 'package:albumtracker/features/settings/presentation/widgets/settings_section.dart';
@@ -114,13 +122,150 @@ class SettingsPage extends StatelessWidget {
 
   static const _urlChannel = MethodChannel('com.app.albumcollect/url_launcher');
 
+  Future<void> _exportCsv(BuildContext context) async {
+    final export = sl<ExportCollectionCsvUseCase>();
+    final result = await export(
+      ExportCollectionCsvParams(languageCode: context.locale.languageCode),
+    );
+    if (!context.mounted) return;
+    result.fold(
+      (failure) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_csvFailureMessage(failure, forImport: false))),
+      ),
+      (_) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('settingsExportSuccess'.tr())),
+      ),
+    );
+  }
+
+  Future<void> _importCsv(BuildContext context) async {
+    final pick = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      withData: true,
+    );
+    if (!context.mounted) return;
+    if (pick == null || pick.files.isEmpty) return;
+
+    final file = pick.files.single;
+
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('settingsImportReadError'.tr())),
+      );
+      return;
+    }
+
+    late final String csvText;
+    try {
+      csvText = utf8.decode(bytes);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('settingsImportEncodingError'.tr())),
+        );
+      }
+      return;
+    }
+
+    if (csvText.trim().isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('settingsImportFileEmpty'.tr())),
+        );
+      }
+      return;
+    }
+
+    final nameLower = file.name.toLowerCase();
+    var extLower = file.extension?.toLowerCase().trim() ?? '';
+    if (extLower.startsWith('.')) {
+      extLower = extLower.substring(1);
+    }
+    final looksLikeExtensionCsv =
+        nameLower.endsWith('.csv') || extLower == 'csv';
+    final looksLikeContent =
+        CollectionHumanCsvCodec.textLooksLikeAlbumTrackerCsv(csvText);
+    if (!looksLikeExtensionCsv && !looksLikeContent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('settingsImportWrongFileType'.tr())),
+      );
+      return;
+    }
+
+    var mode = CollectionCsvImportMode.merge;
+    final albumRepo = sl<AlbumRepository>();
+    final collResult = await albumRepo.getCollection();
+    final hasStickers = collResult.fold(
+      (_) => false,
+      (m) => m.values.any((v) => v > 0),
+    );
+
+    if (hasStickers && context.mounted) {
+      final choice = await showDialog<CollectionCsvImportMode>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: Text('settingsImportModalTitle'.tr()),
+          content: Text('settingsImportModalMessage'.tr()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text('settingsImportModalCancel'.tr()),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(ctx).pop(CollectionCsvImportMode.replace),
+              child: Text('settingsImportModalReplace'.tr()),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(ctx).pop(CollectionCsvImportMode.merge),
+              child: Text('settingsImportModalMerge'.tr()),
+            ),
+          ],
+        ),
+      );
+      if (!context.mounted) return;
+      if (choice == null) return;
+      mode = choice;
+    }
+
+    final import = sl<ImportCollectionCsvUseCase>();
+    final applied = await import(
+      ImportCollectionCsvParams(csvText, mode: mode),
+    );
+    if (!context.mounted) return;
+    applied.fold(
+      (failure) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_csvFailureMessage(failure, forImport: true))),
+      ),
+      (count) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            count == 0
+                ? 'settingsImportEmpty'.tr()
+                : 'settingsImportSuccess'.tr(args: [count.toString()]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _csvFailureMessage(Failure failure, {required bool forImport}) {
+    if (failure is CsvImportFailure) {
+      return failure.message != null && failure.message!.isNotEmpty
+          ? '${'settingsImportError'.tr()}: ${failure.message}'
+          : 'settingsImportError'.tr();
+    }
+    return forImport ? 'settingsImportError'.tr() : 'settingsExportError'.tr();
+  }
+
   Future<void> _openUrl(BuildContext context, String urlString) async {
-    debugPrint('[Settings] _openUrl: intentando abrir "$urlString"');
     try {
       try {
         final ok = await _urlChannel.invokeMethod<bool>('openUrl', {'url': urlString});
         if (ok == true) {
-          debugPrint('[Settings] _openUrl: canal nativo completado');
           return;
         }
       } on MissingPluginException {
@@ -128,13 +273,7 @@ class SettingsPage extends StatelessWidget {
       }
       final uri = Uri.parse(urlString);
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-      debugPrint('[Settings] _openUrl: launchUrl completado correctamente');
-    } catch (e, stack) {
-      debugPrint('[Settings] _openUrl: ERROR al abrir enlace');
-      debugPrint('[Settings]   URL: $urlString');
-      debugPrint('[Settings]   Tipo: ${e.runtimeType}');
-      debugPrint('[Settings]   Mensaje: $e');
-      debugPrint('[Settings]   Stack trace:\n$stack');
+    } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('No se pudo abrir el enlace')),
@@ -160,7 +299,7 @@ class SettingsPage extends StatelessWidget {
       valueListenable: collectionBox.listenable(),
       builder: (context, __, ___) {
         final colors = Theme.of(context).colorScheme;
-        final s = AlbumRepository.getGlobalStats();
+        final s = album_seed_stats.AlbumRepository.getGlobalStats();
         return SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 88),
           child: Column(
@@ -178,7 +317,6 @@ class SettingsPage extends StatelessWidget {
                 avatarColor: avatarColor,
                 collected: s.collectedStickers,
                 total: s.totalStickers,
-                onEdit: () {},
               ),
               SettingsSectionHeader(title: 'settingsAccount'),
               SettingsTile(
@@ -209,7 +347,12 @@ class SettingsPage extends StatelessWidget {
               SettingsTile(
                 icon: Icons.download_outlined,
                 title: 'settingsExportData',
-                onTap: () {},
+                onTap: () => _exportCsv(context),
+              ),
+              SettingsTile(
+                icon: Icons.upload_file_outlined,
+                title: 'settingsImportData',
+                onTap: () => _importCsv(context),
               ),
               SettingsSectionHeader(title: 'settingsSupport'),
               SettingsTile(

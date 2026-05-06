@@ -52,4 +52,34 @@ class AlbumRepositoryImpl implements AlbumRepository {
       return Left(DatabaseFailure());
     }
   }
+
+  @override
+  Future<Either<Failure, void>> applyStickerCounts(Map<String, int> counts) async {
+    try {
+      await localDataSource.applyStickerCounts(counts);
+      return const Right(null);
+    } catch (_) {
+      return Left(DatabaseFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> mergeStickerCounts(Map<String, int> counts) async {
+    try {
+      await localDataSource.mergeStickerCounts(counts);
+      return const Right(null);
+    } catch (_) {
+      return Left(DatabaseFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> replaceStickerCounts(Map<String, int> counts) async {
+    try {
+      await localDataSource.replaceStickerCounts(counts);
+      return const Right(null);
+    } catch (_) {
+      return Left(DatabaseFailure());
+    }
+  }
 }

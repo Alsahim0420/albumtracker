@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/features/home/presentation/widgets/album_badge_flag_display.dart';
+import 'package:albumtracker/features/home/presentation/widgets/team_country_filter_widgets.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/core/storage/hive_storage.dart';
 import 'package:albumtracker/features/home/presentation/bloc/album_bloc.dart';
@@ -241,8 +242,6 @@ class _MissingCountryFilterTrigger extends StatelessWidget {
   final List<String> countries;
   final void Function(String?) onSelect;
 
-  String get _label => selected == null ? 'homeFilterAll'.tr() : selected!;
-
   void _openFilterSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -287,9 +286,9 @@ class _MissingCountryFilterTrigger extends StatelessWidget {
                 Icon(Icons.filter_list_rounded, size: 22, color: colors.onSurfaceVariant),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _label,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  child: TeamCountryFilterBarContent(
+                    selectedTeamCode: selected,
+                    textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: colors.onSurface,
                           fontWeight: FontWeight.w500,
                         ),
@@ -369,8 +368,8 @@ class _MissingFilterSheet extends StatelessWidget {
                       onTap: () => onSelect(null),
                     ),
                     ...countries.map(
-                      (code) => _MissingFilterListTile(
-                        label: code,
+                      (code) => TeamCountryFilterSheetTile(
+                        teamCode: code,
                         isSelected: selected == code,
                         onTap: () => onSelect(code),
                       ),

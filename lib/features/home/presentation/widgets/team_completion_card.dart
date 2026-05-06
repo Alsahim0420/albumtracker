@@ -72,7 +72,7 @@ class TeamCompletionCard extends StatelessWidget {
               Container(
                 width: 1,
                 height: 20,
-                color: colors.outlineVariant,
+                color: colors.onSurfaceVariant,
               ),
               _StatChip(label: 'homeFilterMissing'.tr(), value: '$missing'),
             ],

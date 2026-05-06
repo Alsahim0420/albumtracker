@@ -17,6 +17,17 @@ class TotalCollectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final percent = total > 0 ? (collected / total).clamp(0.0, 1.0) : 0.0;
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Track: surco más oscuro que el fondo del card para que se vea también en 0 %.
+    final progressTrackColor = Color.alphaBlend(
+      Colors.black.withValues(alpha: isDark ? 0.48 : 0.16),
+      colors.primaryContainer,
+    );
+    // Relleno: primary realzado (no primaryContainer: antes coincidía con el card).
+    final progressValueColor = Color.alphaBlend(
+      Colors.white.withValues(alpha: isDark ? 0.34 : 0.26),
+      colors.primary,
+    );
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
@@ -39,8 +50,8 @@ class TotalCollectionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: percent,
-              backgroundColor: colors.primary.withValues(alpha: 0.5),
-              valueColor: AlwaysStoppedAnimation<Color>(colors.primaryContainer),
+              backgroundColor: progressTrackColor,
+              valueColor: AlwaysStoppedAnimation<Color>(progressValueColor),
               minHeight: 8,
             ),
           ),

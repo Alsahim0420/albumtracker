@@ -2,8 +2,6 @@
 
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
-
 import '../models/group_model.dart';
 import '../models/sticker_model.dart';
 import '../models/team_model.dart';
@@ -164,8 +162,6 @@ class WorldCup2026Seed {
       final key = e.key;
       if (_playerNameSearchKeyMatchesInNormalizedBlob(key, blob)) {
         found[e.value.id] = e.value;
-      } else {
-        _debugLogSingleWordRejectedInsideLongToken(key, blob, e.value.id);
       }
     }
     return found.values.toList(growable: false);
@@ -181,21 +177,6 @@ class WorldCup2026Seed {
     return RegExp(
       r'(^|\s)' + RegExp.escape(trimmed) + r'(\s|$)',
     ).hasMatch(blob);
-  }
-
-  static void _debugLogSingleWordRejectedInsideLongToken(
-    String key,
-    String blob,
-    String stickerId,
-  ) {
-    if (!kDebugMode) return;
-    final trimmed = key.trim();
-    if (trimmed.isEmpty || trimmed.contains(RegExp(r'\s'))) return;
-    if (!blob.contains(trimmed)) return;
-    if (RegExp(r'(^|\s)' + RegExp.escape(trimmed) + r'(\s|$)').hasMatch(blob)) {
-      return;
-    }
-    debugPrint('singleWordExactRejectedInsideLongToken=$stickerId');
   }
 
   static TeamModel? getTeamById(String id) {

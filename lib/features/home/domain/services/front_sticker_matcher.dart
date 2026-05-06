@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
 import 'package:albumtracker/core/models/sticker_model.dart';
 import 'package:albumtracker/features/home/domain/services/ocr/player_name_ocr_fuzzy_match.dart';
@@ -61,10 +59,8 @@ class FrontStickerMatcher {
     );
     if (normalizedBlob.isEmpty) return [];
 
-    if (kDebugMode) {
-      _shortAliasRejectLog.clear();
-      _shortAliasTeamRejectLoggedIds.clear();
-    }
+    _shortAliasRejectLog.clear();
+    _shortAliasTeamRejectLoggedIds.clear();
 
     _ensureTokenFrequencyAcrossPlayers();
     final teamHints = _buildTeamHints(scrubbed);
@@ -109,8 +105,6 @@ class FrontStickerMatcher {
         ordered.add(top.player);
       }
     }
-
-    final afterLinePassCount = ordered.length;
 
     // 3) Consenso: ids ya vistos al menos una vez (no bloquea repetir en paso 2; solo
     // evita meter el mismo jugador otra vez desde *esta* expansión si ya hay una fila).
@@ -250,32 +244,8 @@ class FrontStickerMatcher {
       }
       final filteredOut = out.where((s) => !allowed.contains(s.id)).map((s) => s.id).toSet();
       if (filteredOut.isNotEmpty) {
-        if (kDebugMode) {
-          debugPrint('[FrontMatcher] filteredOutIds=${filteredOut.join(",")}');
-        }
         out = out.where((s) => allowed.contains(s.id)).toList();
       }
-    }
-
-    if (kDebugMode) {
-      debugPrint('[FrontMatcher] linesCount=${lines.length} wordCount=${wordList.length}');
-      debugPrint('[FrontMatcher] afterLineOrderedCount=$afterLinePassCount');
-      debugPrint(
-        '[FrontMatcher] greedyOccurrencesCount=${greedyResult?.length ?? 0}',
-      );
-      debugPrint(
-        '[FrontMatcher] greedyOccurrencesIds=${greedyResult?.map((e) => e.id).join(",") ?? ""}',
-      );
-      debugPrint('[FrontMatcher] finalMatchesCount=${out.length}');
-      debugPrint(
-        '[FrontMatcher] finalMatchesIdsWithDuplicates=${out.map((e) => e.id).join(",")}',
-      );
-      debugPrint(
-        '[FrontMatcher] shortAliasRejectedIds=${_shortAliasRejectLog.map((e) => e.split("|").first).join(",")}',
-      );
-      debugPrint(
-        '[FrontMatcher] shortAliasRejectedReason=${_shortAliasRejectLog.map((e) => e.contains("|") ? e.substring(e.indexOf("|") + 1) : e).join(" ; ")}',
-      );
     }
 
     return out;
@@ -398,12 +368,6 @@ class FrontStickerMatcher {
 
       final exact = _tryExactFullNameWordSpanAt(words, i, spanCandidates, consumed);
       if (exact != null) {
-        if (kDebugMode) {
-          debugPrint(
-            '[FrontMatcher] greedyExactNameSpan=${exact.player.id} '
-            'rawSpan="${words.sublist(i, exact.end).join(" ")}"',
-          );
-        }
         out.add(exact.player);
         greedyExactIds.add(exact.player.id);
         _markSpanConsumed(consumed, i, exact.end);
@@ -479,11 +443,6 @@ class FrontStickerMatcher {
       fuzzyAcceptedIds.add(top.p.id);
       _markSpanConsumed(consumed, i, top.end);
       i++;
-    }
-
-    if (kDebugMode) {
-      debugPrint('[FrontMatcher] greedyExactIds=${greedyExactIds.join(",")}');
-      debugPrint('[FrontMatcher] fuzzyAcceptedIds=${fuzzyAcceptedIds.join(",")}');
     }
 
     return (
@@ -730,7 +689,6 @@ class FrontStickerMatcher {
   }
 
   void _logShortAliasReject(StickerModel player, String reason) {
-    if (!kDebugMode) return;
     _shortAliasRejectLog.add('${player.id}|$reason');
   }
 
@@ -753,7 +711,7 @@ class FrontStickerMatcher {
   }) {
     final tid = player.teamId.toUpperCase();
     if (teamHints.isNotEmpty && !teamHints.containsKey(tid)) {
-      if (kDebugMode && _shortAliasTeamRejectLoggedIds.add(player.id)) {
+      if (_shortAliasTeamRejectLoggedIds.add(player.id)) {
         _logShortAliasReject(
           player,
           'shortMono:noTeamEvidence need=$tid have=${teamHints.keys.join(",")}',

@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
@@ -12,26 +13,16 @@ const Duration _connectivityTestTimeout = Duration(seconds: 15);
 
 /// Prueba genérica de salida a Internet (DNS + TLS).
 Future<void> testInternetConnection(http.Client httpClient) async {
-  try {
-    final response = await httpClient
-        .get(Uri.parse('https://www.google.com'))
-        .timeout(_connectivityTestTimeout);
-    debugPrint('[OCR_DEBUG] INTERNET_OK status=${response.statusCode}');
-  } catch (e) {
-    debugPrint('[OCR_DEBUG] INTERNET_FAIL error=$e');
-  }
+  await httpClient
+      .get(Uri.parse('https://www.google.com'))
+      .timeout(_connectivityTestTimeout);
 }
 
 /// Prueba resolución/conectividad al host de OpenAI (si falla aquí pero [testInternetConnection] OK → sospecha de DNS/firewall al dominio).
 Future<void> testOpenAiHostReachability(http.Client httpClient) async {
-  try {
-    final response = await httpClient
-        .get(Uri.parse('https://api.openai.com'))
-        .timeout(_connectivityTestTimeout);
-    debugPrint('[OCR_DEBUG] OPENAI_HOST_OK status=${response.statusCode}');
-  } catch (e) {
-    debugPrint('[OCR_DEBUG] OPENAI_HOST_FAIL error=$e');
-  }
+  await httpClient
+      .get(Uri.parse('https://api.openai.com'))
+      .timeout(_connectivityTestTimeout);
 }
 
 /// Cliente OpenAI: visión sobre la foto del sticker → texto plano para el pipeline existente.
@@ -87,11 +78,6 @@ class OpenAIService {
 
     final Uint8List bytes = await file.readAsBytes();
     if (bytes.isEmpty || bytes.length > _maxImageBytes) {
-      if (kDebugMode) {
-        debugPrint(
-          '[OpenAIService] imagen vacía o demasiado grande (${bytes.length} bytes, máx $_maxImageBytes)',
-        );
-      }
       return '';
     }
 
@@ -108,7 +94,6 @@ class OpenAIService {
     await testOpenAiHostReachability(_http);
 
     try {
-      debugPrint('[OCR_DEBUG] OPENAI_REQUEST_START url=https://api.openai.com');
       final res = await _http
           .post(
             Uri.parse(_responsesUrl),
@@ -120,16 +105,7 @@ class OpenAIService {
           )
           .timeout(_requestTimeout);
 
-      debugPrint(
-        '[OCR_DEBUG] OPENAI_RESPONSE_RECEIVED statusCode=${res.statusCode}',
-      );
-
       if (res.statusCode < 200 || res.statusCode >= 300) {
-        if (kDebugMode) {
-          debugPrint(
-            '[OpenAIService] vision HTTP ${res.statusCode} body=${res.body.length > 300 ? "${res.body.substring(0, 300)}…" : res.body}',
-          );
-        }
         return '';
       }
 
@@ -138,20 +114,13 @@ class OpenAIService {
 
       final err = decoded['error'];
       if (err != null) {
-        if (kDebugMode) {
-          debugPrint('[OpenAIService] API error: $err');
-        }
         return '';
       }
 
       final text = _extractOutputText(decoded).trim();
       if (text.length < 2) return '';
       return text;
-    } catch (e, st) {
-      debugPrint('[OCR_DEBUG] OPENAI_NETWORK_ERROR error=$e');
-      if (kDebugMode) {
-        debugPrint('[OpenAIService] extractStickerTextFromImage failed: $e\n$st');
-      }
+    } catch (e) {
       return '';
     }
   }
@@ -215,11 +184,6 @@ class OpenAIService {
           .timeout(_requestTimeout);
 
       if (res.statusCode < 200 || res.statusCode >= 300) {
-        if (kDebugMode) {
-          debugPrint(
-            '[OpenAIService] vision HTTP ${res.statusCode} body=${res.body.length > 300 ? "${res.body.substring(0, 300)}…" : res.body}',
-          );
-        }
         return '';
       }
 
@@ -228,17 +192,13 @@ class OpenAIService {
 
       final err = decoded['error'];
       if (err != null) {
-        if (kDebugMode) debugPrint('[OpenAIService] API error: $err');
         return '';
       }
 
       final text = _extractOutputText(decoded).trim();
       if (text.length < 2) return '';
       return text;
-    } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('[OpenAIService] vision request failed: $e\n$st');
-      }
+    } catch (e) {
       return '';
     }
   }

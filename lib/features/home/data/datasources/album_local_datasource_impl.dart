@@ -22,4 +22,19 @@ class AlbumLocalDataSourceImpl implements AlbumLocalDatasource {
   Future<void> addStickersByStickerIds(Iterable<String> stickerIds) async {
     await hive.addStickersByStickerIds(stickerIds);
   }
+
+  @override
+  Future<void> applyStickerCounts(Map<String, int> counts) async {
+    await hive.applyStickerCounts(counts);
+  }
+
+  @override
+  Future<void> mergeStickerCounts(Map<String, int> counts) async {
+    await hive.mergeStickerCounts(counts);
+  }
+
+  @override
+  Future<void> replaceStickerCounts(Map<String, int> counts) async {
+    await hive.replaceStickerCounts(counts);
+  }
 }

@@ -1,6 +1,4 @@
 import 'package:albumtracker/core/data/world_cup_2026_seed.dart';
-import 'package:flutter/foundation.dart';
-
 /// Reverso: texto de cabecera 2026 con código "POR 11".
 class Fifa2026BackOcrParser {
   static const Map<String, String> _ocrCodeAliases = {
@@ -179,13 +177,6 @@ class Fifa2026BackOcrParser {
     return n >= 1 && n <= 20;
   }
 
-  static void _logBackCandidate(String raw, String normalizedLabel, bool accepted) {
-    if (!kDebugMode) return;
-    debugPrint(
-      '[fifaBackOcr] rawBackCodeCandidate=$raw normalized=$normalizedLabel accepted=$accepted',
-    );
-  }
-
   static List<({String code, int number})> _scanWindowForBackCodes(String window) {
     final hits = <_BackCodeHit>[];
 
@@ -254,19 +245,15 @@ class Fifa2026BackOcrParser {
     final teamNorm = _normalizeBackTeamOcr(h.rawTeam);
     final code = _normalizeOcrCode(teamNorm);
     if (code != 'FWC' && !_knownTeamCodes.contains(code)) {
-      _logBackCandidate(h.rawFull, '$code (unknown team)', false);
       return null;
     }
     final slot = _parseBackSlotOcr(h.rawSlot);
     if (slot == null) {
-      _logBackCandidate(h.rawFull, '$code ${h.rawSlot}', false);
       return null;
     }
     if (!_isValidSlotForCode(code, slot)) {
-      _logBackCandidate(h.rawFull, '$code $slot', false);
       return null;
     }
-    _logBackCandidate(h.rawFull, '$code $slot', true);
     return (code: code, number: slot);
   }
 
