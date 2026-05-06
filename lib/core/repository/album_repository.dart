@@ -60,6 +60,20 @@ class AlbumRepository {
   AlbumRepository._();
 
   static Map<String, int> get _collection => hive.collectedStickersMap;
+  static const Map<String, List<String>> _visualTeamOrderByGroup = {
+    'Group A': ['Mexico', 'South Africa', 'South Korea', 'Czech Republic'],
+    'Group B': ['Canada', 'Bosnia and Herzegovina', 'Qatar', 'Switzerland'],
+    'Group C': ['Brazil', 'Morocco', 'Haiti', 'Scotland'],
+    'Group D': ['USA', 'Paraguay', 'Australia', 'Turkey'],
+    'Group E': ['Germany', 'Curaçao', 'Ivory Coast', 'Ecuador'],
+    'Group F': ['Netherlands', 'Japan', 'Sweden', 'Tunisia'],
+    'Group G': ['Belgium', 'Egypt', 'Iran', 'New Zealand'],
+    'Group H': ['Spain', 'Cape Verde', 'Saudi Arabia', 'Uruguay'],
+    'Group I': ['France', 'Senegal', 'Iraq', 'Norway'],
+    'Group J': ['Argentina', 'Argelia', 'Austria', 'Jordan'],
+    'Group K': ['Portugal', 'DR Congo', 'Uzbekistan', 'Colombia'],
+    'Group L': ['England', 'Croatia', 'Ghana', 'Panama'],
+  };
 
   static GlobalAlbumStats getGlobalStats() {
     final total = WorldCup2026Seed.totalAlbumStickers;
@@ -132,7 +146,16 @@ class AlbumRepository {
           total: p.total,
           flagCode: t.flagAssetPath?.isNotEmpty ?? false ? t.flagAssetPath : null,
         );
-      }).toList();
+      }).toList()
+        ..sort((a, b) {
+          final groupOrder = _visualTeamOrderByGroup[g.name];
+          if (groupOrder == null) return 0;
+          final aIndex = groupOrder.indexOf(a.name);
+          final bIndex = groupOrder.indexOf(b.name);
+          final safeA = aIndex == -1 ? 999 : aIndex;
+          final safeB = bIndex == -1 ? 999 : bIndex;
+          return safeA.compareTo(safeB);
+        });
       return GroupWithTeams(name: g.name, teams: teams);
     }).toList();
   }

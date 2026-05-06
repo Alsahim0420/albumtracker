@@ -430,22 +430,26 @@ List<String> _groupedScanSummaryLines(List<SingleStickerScanResult> successfulIt
 }
 
 String _successfulStickerLine(StickerModel sticker) {
+  final stickerCode = sticker.code;
   final country = _teamDisplayName(sticker.teamId);
   switch (sticker.type) {
     case StickerType.badge:
-      return 'Insignia - $country';
+      return '$stickerCode - Insignia - $country';
     case StickerType.team_photo:
-      return 'Foto de equipo - $country';
+      return '$stickerCode - Foto de equipo - $country';
     case StickerType.player:
       final name = (sticker.playerName ?? '').trim();
-      if (name.isNotEmpty) return '$name - $country';
-      return 'Jugador - $country';
+      if (name.isNotEmpty) return '$stickerCode - $name - $country';
+      return '$stickerCode - Jugador - $country';
     case StickerType.special:
-      return 'Especial - ${sticker.displayCode}';
+      return '$stickerCode - Especial - $country';
   }
 }
 
 String _teamDisplayName(String teamId) {
+  if (teamId == WorldCup2026Seed.specialTeamCode) {
+    return 'FIFA World Cup 2026';
+  }
   for (final g in WorldCup2026Seed.groups) {
     for (final t in g.teams) {
       if (t.id == teamId) {

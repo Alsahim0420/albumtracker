@@ -57,12 +57,40 @@ class _RepeatedStickersViewState extends State<RepeatedStickersView> {
                         ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'homeFilterSwaps'.tr(args: [totalDuplicates.toString()]),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colors.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: colors.outlineVariant.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.content_copy_rounded,
+                          size: 18,
+                          color: colors.primary,
                         ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'teamDetailDuplicates'.tr(
+                              args: [totalDuplicates.toString()],
+                            ),
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  color: colors.onPrimaryContainer,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
