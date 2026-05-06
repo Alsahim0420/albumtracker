@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, unused_local_variable, unnecessary_underscores, unused_import
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
@@ -139,6 +140,9 @@ class SettingsPage extends StatelessWidget {
   }
 
   Future<void> _importCsv(BuildContext context) async {
+    debugPrint(
+      '[CSV_IMPORT_DEBUG] platform=${Theme.of(context).platform}',
+    );
     final pick = await FilePicker.platform.pickFiles(
       type: FileType.any,
       withData: true,
@@ -147,8 +151,24 @@ class SettingsPage extends StatelessWidget {
     if (pick == null || pick.files.isEmpty) return;
 
     final file = pick.files.single;
+    debugPrint('[CSV_IMPORT_DEBUG] file.name=${file.name}');
+    debugPrint('[CSV_IMPORT_DEBUG] file.path=${file.path}');
 
-    final bytes = file.bytes;
+    var bytes = file.bytes;
+    final bytesInMemory = bytes != null;
+    debugPrint('[CSV_IMPORT_DEBUG] bytes.inMemory=${bytesInMemory ? 'not_null' : 'null'}');
+    if (bytes == null && file.path != null && file.path!.isNotEmpty) {
+      try {
+        bytes = await File(file.path!).readAsBytes();
+        debugPrint('[CSV_IMPORT_DEBUG] bytes.origin=path');
+      } catch (e) {
+        debugPrint('[CSV_IMPORT_DEBUG] bytes.origin=path_read_error error=$e');
+      }
+    } else {
+      debugPrint('[CSV_IMPORT_DEBUG] bytes.origin=memory');
+    }
+    debugPrint('[CSV_IMPORT_DEBUG] bytes.length=${bytes?.length ?? 0}');
+
     if (bytes == null || bytes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('settingsImportReadError'.tr())),
